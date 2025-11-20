@@ -5,9 +5,9 @@ import { FileType, AnyFile } from "../types";
  * Hidden files count as having no extension.
  */
 export function getExtension(filename: string): string {
-    filename = filename.split("/").at(-1)!; // remove any path
-    const dotPos = filename.lastIndexOf(".");
-    return dotPos > 0 ? filename.slice(dotPos + 1) : "";
+	filename = filename.split("/").at(-1)!; // remove any path
+	const dotPos = filename.lastIndexOf(".");
+	return dotPos > 0 ? filename.slice(dotPos + 1) : "";
 }
 
 /**
@@ -16,39 +16,44 @@ export function getExtension(filename: string): string {
  * The condition predicate will be called on each file AFTER its children have been filtered.
  */
 export function filterFileTree<T extends AnyFile>(
-    root: T,
-    condition: (node: AnyFile, path: string) => boolean,
-    path = ""
+	root: T,
+	condition: (node: AnyFile, path: string) => boolean,
+	path = ""
 ): T {
-    // Can't use path module in webview.
-    const joinPath = (path: string, c: AnyFile) => path ? `${path}/${c.name}` : c.name;
+	// Can't use path module in webview.
+	const joinPath = (path: string, c: AnyFile) => (path ? `${path}/${c.name}` : c.name);
 
-    if (root.type == FileType.Directory) {
-        return {
-            ...root,
-            children: root.children
-                // map first so condition is run on already filtered directories
-                .map(child => filterFileTree(child, condition, joinPath(path, child)))
-                .filter(child => condition(child, joinPath(path, child)))
-        };
-    } else {
-        return root;
-    }
+	if (root.type == FileType.Directory) {
+		return {
+			...root,
+			children: root.children
+				// map first so condition is run on already filtered directories
+				.map((child) => filterFileTree(child, condition, joinPath(path, child)))
+				.filter((child) => condition(child, joinPath(path, child))),
+		};
+	} else {
+		return root;
+	}
 }
 
 /**
  * Converts a value to a normalized JSON string, sorting object keys.
  */
 export function normalizedJSONStringify(val: any) {
-    const replacer = (key: string, val: any) => {
-        if (typeof val == 'object' && val !== null && !Array.isArray(val)) {
-            return Object.keys(val).sort().reduce<Record<string, any>>((o, k) => { o[k] = val[k]; return o; }, {});
-        } else {
-            return val;
-        }
-    };
+	const replacer = (key: string, val: any) => {
+		if (typeof val == "object" && val !== null && !Array.isArray(val)) {
+			return Object.keys(val)
+				.sort()
+				.reduce<Record<string, any>>((o, k) => {
+					o[k] = val[k];
+					return o;
+				}, {});
+		} else {
+			return val;
+		}
+	};
 
-    return JSON.stringify(val, replacer);
+	return JSON.stringify(val, replacer);
 }
 
 /**
@@ -56,8 +61,8 @@ export function normalizedJSONStringify(val: any) {
  * Can be used to convert a number into a valid index in an array with circular semantics
  */
 export function loopIndex(i: number, len: number): number {
-    return (i >= 0) ? i % len : len + (i + 1) % len - 1;
+	return i >= 0 ? i % len : len + ((i + 1) % len) - 1;
 }
 
 /** Makes a set of keys on type optional */
-export type OptionalKeys<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
+export type OptionalKeys<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

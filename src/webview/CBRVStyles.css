@@ -1,85 +1,89 @@
 body {
-    width: 100vw;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+	width: 100vw;
+	height: 100vh;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 }
 
 #diagram {
-    flex-grow: 1;
-    padding: 0;
-    margin: 0;
+	flex-grow: 1;
+	padding: 0;
+	margin: 0;
 
-    text-anchor: middle;
-    dominant-baseline: middle;
-    font-family: sans-serif;
+	text-anchor: middle;
+	dominant-baseline: middle;
+	font-family: sans-serif;
 }
 
 /* Adding a tooltip makes an svg element "selectable" and show a border on click, disable that. */
-#diagram:focus, #diagram *:focus {
-    outline: none;
+#diagram:focus,
+#diagram *:focus {
+	outline: none;
 }
 
 .directory > path {
-    stroke: #bbb;
-    stroke-width: 1;
-    fill-opacity: 0; /* directories are transparent */
+	stroke: #bbb;
+	stroke-width: 1;
+	fill-opacity: 0; /* directories are transparent */
 }
 
 .label {
-    user-select: none;
+	user-select: none;
 }
 
 .directory .label-background {
-    stroke: var(--vscode-editor-background);
-    stroke-width: 6;
+	stroke: var(--vscode-editor-background);
+	stroke-width: 6;
 }
 
 .directory .label {
-    fill: var(--vscode-editor-foreground);
+	fill: var(--vscode-editor-foreground);
 }
 
 .directory .contents-hidden-label {
-    display: none;
-    /* Ellipsis is at the bottom of a font line, so move baseline up so its in the middle */
-    dominant-baseline: alphabetic;
-    fill: var(--vscode-editor-foreground);
+	display: none;
+	/* Ellipsis is at the bottom of a font line, so move baseline up so its in the middle */
+	dominant-baseline: alphabetic;
+	fill: var(--vscode-editor-foreground);
 }
 
 .directory.contents-hidden .contents-hidden-label {
-    display: inherit;
+	display: inherit;
 }
 
-.directory.labels-hidden .label, .directory.labels-hidden .label-background, .file.labels-hidden .label {
-    visibility: hidden; /* Use visibility so that we can still get the rendered size in JS */
+.directory.labels-hidden .label,
+.directory.labels-hidden .label-background,
+.file.labels-hidden .label {
+	visibility: hidden; /* Use visibility so that we can still get the rendered size in JS */
 }
 
 .connection {
-    fill: none;
+	fill: none;
 }
 
-#diagram[data-show-on-hover=true] .connection {
-    display: none;
-    opacity: 0;
+#diagram[data-show-on-hover="true"] .connection {
+	display: none;
+	opacity: 0;
 }
 
 /** Styling for the filter inputs */
 #filters {
-    display: flex;
+	display: flex;
 }
 #filters .form-input {
-    display: flex;
-    align-items: center;
-    padding: 5px 10px;
+	display: flex;
+	align-items: center;
+	padding: 5px 10px;
 }
 #filters .form-input label {
-    padding-right: 5px;
+	padding-right: 5px;
 }
-#filters .form-input input:not([type]), #filters .form-input input[type='text'] {
-    flex-grow: 1;
-    min-width: 4em;
-    width: 0; /** Have to override default width */
+#filters .form-input input:not([type]),
+#filters .form-input input[type="text"] {
+	flex-grow: 1;
+	min-width: 4em;
+	width: 0; /** Have to override default width */
 }

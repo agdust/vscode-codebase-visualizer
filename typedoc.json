@@ -1,9 +1,7 @@
 {
-    "tsconfig": "src/tsconfig.json",
-    "entryPointStrategy": "expand",
-    "entryPoints": [
-        "src/api.ts",
-],
-    "excludePrivate": true,
-    "out": "docs"
+	"tsconfig": "src/tsconfig.json",
+	"entryPointStrategy": "expand",
+	"entryPoints": ["src/api.ts"],
+	"excludePrivate": true,
+	"out": "docs"
 }

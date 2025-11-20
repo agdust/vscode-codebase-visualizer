@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 import { API } from "./api";
 import * as codebaseVisualization from "./visualizations/codebaseVisualization";
@@ -7,12 +7,12 @@ import * as stackTraceVisualization from "./visualizations/stackTraceVisualizati
 import * as pythonDependencyVisualization from "./visualizations/pythonDependencyVisualization";
 
 export async function activate(context: vscode.ExtensionContext) {
-    const cbrvAPI = new API(context);
+	const cbrvAPI = new API(context);
 
-    await codebaseVisualization.activate(context);
-    await hyperlinkVisualization.activate(context);
-    await stackTraceVisualization.activate(context);
-    await pythonDependencyVisualization.activate(context);
+	await codebaseVisualization.activate(context);
+	await hyperlinkVisualization.activate(context);
+	await stackTraceVisualization.activate(context);
+	await pythonDependencyVisualization.activate(context);
 
-    return cbrvAPI;
+	return cbrvAPI;
 }

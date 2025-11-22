@@ -15,11 +15,10 @@ function main() {
 				view = new CBRVWebview(
 					message.settings!,
 					message.codebase!,
-					message.connections!
 				);
 				return;
 			}
-			view.update(message.settings, message.codebase, message.connections);
+			view.update(message.settings, message.codebase);
 			return;
 		}
 		if (message.type == "tooltip-set") {

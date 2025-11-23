@@ -179,3 +179,59 @@ body {
 #sidebar:not(.collapsed) + #content #open-sidebar {
 	display: none;
 }
+
+.file-tree {
+	overflow-y: auto;
+	flex-grow: 1;
+	padding: 5px;
+}
+
+.tree-node {
+	display: flex;
+	flex-direction: column;
+	margin-left: 10px;
+}
+
+.tree-item {
+	display: flex;
+	align-items: center;
+	padding: 2px 0;
+	cursor: pointer;
+}
+
+.tree-item:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.tree-item input[type="checkbox"] {
+	margin-right: 5px;
+}
+
+.tree-item .icon {
+	margin-right: 5px;
+	width: 16px;
+	text-align: center;
+	font-size: 12px;
+}
+
+.tree-children {
+	display: none;
+	margin-left: 10px;
+	border-left: 1px solid var(--vscode-tree-indentGuidesStroke);
+}
+
+.tree-node.expanded > .tree-children {
+	display: block;
+}
+
+.tree-toggle {
+	cursor: pointer;
+	width: 16px;
+	text-align: center;
+	margin-right: 2px;
+	user-select: none;
+}
+
+.tree-toggle:hover {
+	color: var(--vscode-foreground);
+}

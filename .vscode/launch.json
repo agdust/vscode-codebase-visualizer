@@ -32,7 +32,7 @@
 				"--exclude",
 				"${workspaceFolder}/test/integration/**/*.ts",
 				"--exclude",
-				"${workspaceFolder}/test/sample-codebases/**/*.ts",
+				"${workspaceFolder}/test/sample-repos/**/*.ts",
 				"--colors"
 			],
 			"internalConsoleOptions": "openOnSessionStart",
@@ -44,7 +44,7 @@
 			"request": "launch",
 			"runtimeExecutable": "${execPath}",
 			"args": [
-				"${workspaceFolder}/test/sample-codebases",
+				"${workspaceFolder}/test/sample-repos",
 				"--extensionDevelopmentPath=${workspaceFolder}",
 				"--extensionTestsPath=${workspaceFolder}/dist/test/test/integration/index",
 				"--disable-extensions"

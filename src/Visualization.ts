@@ -5,8 +5,8 @@ import * as fs from "fs";
 
 import {
 	WebviewVisualizationSettings,
-	CBRVMessage,
-	CBRVWebviewMessage,
+	RepovisMessage,
+	RepovisWebviewMessage,
 	Directory,
 } from "./types";
 import * as fileHelper from "./util/fileHelper";
@@ -22,7 +22,7 @@ import { shallowCompare } from "./util/shallowCompare";
 export type VisualizationState = InstanceType<typeof Visualization.VisualizationState>;
 
 /**
- * Creates, launches, and allows updating a CBRV visualization.
+ * Creates, launches, and allows updating a visualization.
  */
 export class Visualization {
 	/** The URI of the root of the codebase this Visualization is visualizing. */
@@ -58,7 +58,7 @@ export class Visualization {
 		// Await until we get the ready message from the webview
 		await new Promise((resolve, reject) => {
 			const disposable = this.webviewPanel.webview.onDidReceiveMessage(
-				async (message: CBRVWebviewMessage) => {
+				async (message: RepovisWebviewMessage) => {
 					if (message.type == "ready") {
 						disposable.dispose();
 						resolve(undefined);
@@ -74,7 +74,7 @@ export class Visualization {
 		this.setupWatcher();
 
 		this.webviewPanel.webview.onDidReceiveMessage(
-			async (message: CBRVWebviewMessage) => {
+			async (message: RepovisWebviewMessage) => {
 				if (message.type == "ready") {
 					// we can get ready again if the webview closes and reopens.
 					await this.sendSet({ codebase: true, settings: true });
@@ -345,7 +345,7 @@ export class Visualization {
 		await this.send({ type: "set", settings, codebase });
 	}
 
-	private async send(message: CBRVMessage) {
+	private async send(message: RepovisMessage) {
 		await this.webviewPanel.webview.postMessage(message);
 	}
 

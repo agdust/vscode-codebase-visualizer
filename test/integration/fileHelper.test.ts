@@ -8,9 +8,9 @@ import * as fileHelper from "../../src/util/fileHelper";
 import { deepEqual } from "../../src/util/deepEqual";
 import { writeFileTree } from "./integrationHelpers";
 
-// I can't find a built-in way to get workspaceFolder. __dirname is .../CBRV/dist/test/test/integration
+// I can't find a built-in way to get workspaceFolder. __dirname is .../repovis/dist/test/test/integration
 const workspaceFolder = Uri.file([0, 1, 2, 3].reduce((p) => path.dirname(p), __dirname));
-const samples = Uri.joinPath(workspaceFolder, "/test/sample-codebases");
+const samples = Uri.joinPath(workspaceFolder, "/test/sample-repos");
 const minimal = Uri.joinPath(samples, "minimal");
 const symlinks = Uri.joinPath(samples, "symlinks");
 
@@ -207,10 +207,10 @@ describe("Test fileHelper", () => {
 		});
 
 		await expect(fileHelper.listToFileTree(minimal, [minimal])).rejects.toThrow(
-			/".*sample-codebases[\\/]minimal" is not under ".*sample-codebases[\\/]minimal"/,
+			/".*sample-repos[\\/]minimal" is not under ".*sample-repos[\\/]minimal"/,
 		);
 		await expect(fileHelper.listToFileTree(minimal, [samples])).rejects.toThrow(
-			/".*sample-codebases" is not under ".*sample-codebases[\\/]minimal"/,
+			/".*sample-repos" is not under ".*sample-repos[\\/]minimal"/,
 		);
 
 		fileList = await vscode.workspace.findFiles(

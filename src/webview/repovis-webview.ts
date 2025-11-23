@@ -19,7 +19,7 @@ import {
 	FileType,
 	Directory,
 	WebviewVisualizationSettings,
-	CBRVWebviewMessage,
+	RepovisWebviewMessage,
 } from "../types";
 import { getExtension } from "../util/getExtension";
 import { filterFileTree } from "../util/filterFileTree";
@@ -38,7 +38,7 @@ type Selection<
 /**
  * This is the class that renders the actual diagram.
  */
-export default class CBRVWebview {
+export default class RepovisWebview {
 	settings: WebviewVisualizationSettings;
 	codebase: Directory;
 
@@ -314,7 +314,7 @@ export default class CBRVWebview {
 
 					// Add event listeners.
 					all
-						.on("dblclick", (event, d) => {
+						.on("dblclick", (_, d) => {
 							if (d.data.type == FileType.Directory) {
 								this.emit({ type: "reveal", file: this.filePath(d) });
 							} else if (d.data.type == FileType.File) {
@@ -346,10 +346,9 @@ export default class CBRVWebview {
 
 					return all;
 				},
-				(update) => {
+				(update) =>
 					// TODO transitions
-					return update.classed("new", false);
-				},
+					update.classed("new", false),
 				(exit) =>
 					exit
 						.each((d, i, nodes) => {
@@ -525,8 +524,8 @@ export default class CBRVWebview {
 		this.throttledUpdate();
 	}
 
-	emit(message: CBRVWebviewMessage): void {
-		this.svgElement.dispatchEvent(new CustomEvent(`cbrv:send`, { detail: message }));
+	emit(message: RepovisWebviewMessage): void {
+		this.svgElement.dispatchEvent(new CustomEvent(`repovis:send`, { detail: message }));
 	}
 
 	emitUpdateSettings(

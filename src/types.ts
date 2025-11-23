@@ -51,9 +51,9 @@ export interface WebviewVisualizationSettings {
 export type WebviewContextMenuItem = { title: string; action: string };
 
 /** Messages the Visualization class will send to the webview */
-export type CBRVMessage = SetMessage;
+export type RepovisMessage = SetMessage;
 /** Messages the webview will send to the Visualization class */
-export type CBRVWebviewMessage =
+export type RepovisWebviewMessage =
 	| ReadyMessage
 	| OpenMessage
 	| RevealInExplorerMessage

@@ -1,12 +1,13 @@
-import CBRVWebview from "./CBRVWebview";
-import { CBRVMessage, CBRVWebviewMessage } from "../types";
-import "./CBRVStyles.css";
+import RepovisWebview from "./repovis-webview";
+import { RepovisMessage, RepovisWebviewMessage } from "../types";
 import { FileTree } from "./FileTree";
+
+import "./styles.css";
 
 const vscode = acquireVsCodeApi();
 
 function main() {
-	let view: CBRVWebview | undefined;
+	let view: RepovisWebview | undefined;
 	const getElement = <T extends HTMLElement = HTMLElement>(id: string): T => {
 		const element = document.getElementById(id);
 		if (!element) {
@@ -51,7 +52,7 @@ function main() {
 	const fileTree = new FileTree(excludedPaths, updateFilters);
 
 	addEventListener("message", (event: MessageEvent) => {
-		const message: CBRVMessage = event.data;
+		const message: RepovisMessage = event.data;
 
 		if (message.type == "set") {
 			if (message.settings) {
@@ -69,7 +70,7 @@ function main() {
 			}
 
 			if (message.settings && message.codebase) {
-				view = new CBRVWebview(message.settings, message.codebase);
+				view = new RepovisWebview(message.settings, message.codebase);
 				return;
 			}
 
@@ -80,8 +81,8 @@ function main() {
 	});
 
 	// just pass events through as webview messages
-	svg.addEventListener(`cbrv:send`, (event: Event) => {
-		vscode.postMessage((event as CustomEvent).detail as CBRVWebviewMessage);
+	svg.addEventListener(`repovis:send`, (event: Event) => {
+		vscode.postMessage((event as CustomEvent).detail as RepovisWebviewMessage);
 	});
 
 	const toggleSidebar = () => {

@@ -10,21 +10,6 @@ import {
 	type ContextMenuItem,
 } from "./VisualizationSettings";
 
-/**
- * This is the API that the CBRV VSCode extension will expose.
- *
- * To use, add `jesse-r-s-hines.codebase-relationship-visualizer` to your package.json `extensionDependencies` and then
- * import the api like so:
- *
- *  ```ts
- * let cbrvAPI = vscode.extensions.getExtension('jesse-r-s-hines.codebase-relationship-visualizer').exports;
- * let visualization = await cbrvAPI.create({
- *   // ...
- * })
- * ```
- *
- * See https://code.visualstudio.com/api/references/vscode-api#extensions
- */
 export class API {
 	context: vscode.ExtensionContext;
 	constructor(context: vscode.ExtensionContext) {

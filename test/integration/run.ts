@@ -4,12 +4,12 @@ import { runTests } from "@vscode/test-electron";
 
 async function main() {
 	try {
-		// I can't find a built-in way to get workspaceFolder. __dirname is .../CBRV/dist/test/test/integration
+		// I can't find a built-in way to get workspaceFolder. __dirname is .../repovis/dist/test/test/integration
 		const workspaceFolder = [...Array(4)].reduce((p) => path.dirname(p), __dirname);
 
 		// Opening files in the tests with `vscode.commands.executeCommand("vscode.openFolder", ...)` doesn't work
 		// reliably. It sometimes works and sometimes doesn't, even with manual sleeps. And it starts a new VSCode
-		// instance, which breaks the debugger. So we're just open sample-codebases here in the launch script.
+		// instance, which breaks the debugger. So we're just open sample-repos here in the launch script.
 
 		// The folder containing the Extension Manifest package.json
 		// Passed to `--extensionDevelopmentPath`
@@ -24,7 +24,7 @@ async function main() {
 			extensionDevelopmentPath,
 			extensionTestsPath,
 			launchArgs: [
-				`${workspaceFolder}/test/sample-codebases`, // open sample-codebases folder
+				`${workspaceFolder}/test/sample-repos`, // open sample-repos folder
 				"--disable-extensions",
 			],
 		});

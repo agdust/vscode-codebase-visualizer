@@ -6,7 +6,7 @@ export default tseslint.config(
 	eslint.configs.recommended,
 	...tseslint.configs.strict,
 	{
-		ignores: ['media/**', 'dist/**', 'out/**', 'node_modules/**', 'test/sample-codebases/'],
+		ignores: ['media/**', 'dist/**', 'out/**', 'node_modules/**', 'test/sample-repos/'],
 	},
 	{
 		languageOptions: {

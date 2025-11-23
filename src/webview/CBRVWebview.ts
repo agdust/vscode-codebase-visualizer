@@ -12,7 +12,7 @@ import _ from "lodash";
 const d3ContextMenu = require("d3-context-menu"); // eslint-disable-line
 import "d3-context-menu/css/d3-context-menu.css"; // manually require the CSS
 
-import tippy, { followCursor } from "tippy.js";
+import tippy, { followCursor, Instance } from "tippy.js";
 import "tippy.js/dist/tippy.css"; // optional for styling
 import { DeepPartial } from "ts-essentials";
 
@@ -81,6 +81,7 @@ export default class CBRVWebview {
 
 	// Parts of the d3 diagram
 	diagram: Selection<SVGSVGElement>;
+	svgElement: SVGSVGElement;
 	defs: Selection<SVGDefsElement>;
 	zoomWindow: Selection<SVGGElement>;
 	fileLayer: Selection<SVGGElement>;
@@ -106,6 +107,11 @@ export default class CBRVWebview {
 		this.diagram = d3
 			.select<SVGSVGElement, unknown>("#diagram")
 			.attr("viewBox", this.getViewbox());
+		const node = this.diagram.node();
+		if (!node) {
+			throw new Error("Diagram element not found");
+		}
+		this.svgElement = node;
 		this.defs = this.diagram.append("defs");
 		this.zoomWindow = this.diagram.append("g").classed("zoom-window", true);
 		this.fileLayer = this.zoomWindow.append("g").classed("file-layer", true);
@@ -158,13 +164,13 @@ export default class CBRVWebview {
 
 		d3.select(window).on("resize", () => this.onResize());
 
-		[this.width, this.height] = getRect(this.diagram.node());
+		[this.width, this.height] = getRect(this.svgElement);
 
 		tippy.setDefaultProps({
 			plugins: [followCursor],
 		});
 
-		this.diagram.node().focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
+		this.svgElement.focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
 
 		this.update(this.settings, this.codebase);
 	}
@@ -182,14 +188,14 @@ export default class CBRVWebview {
 
 	throttledUpdate: () => void;
 
-	update(settings?: WebviewVisualizationSettings, codebase?: Directory) {
+	update(settings?: WebviewVisualizationSettings, codebase?: Directory): void {
 		this.settings = settings ?? this.settings;
 		this.codebase = codebase ?? this.codebase;
 
 		this.updateCodebase(!!(settings || codebase));
 	}
 
-	updateCodebase(fullRerender = true) {
+	updateCodebase(fullRerender = true): void {
 		// rename to filesChanged
 		const filteredCodebase = this.filteredCodebase();
 
@@ -346,7 +352,12 @@ export default class CBRVWebview {
 				},
 				(exit) =>
 					exit
-						.each((d, i, nodes) => nodes[i]._tippy?.destroy()) // destroy any tippy instances
+						.each((d, i, nodes) => {
+							const node = nodes[i];
+							if (node) {
+								(node as unknown as { _tippy?: Instance })._tippy?.destroy();
+							}
+						}) // destroy any tippy instances
 						.remove(),
 			);
 
@@ -418,12 +429,14 @@ export default class CBRVWebview {
 			const firstVisible = d
 				.ancestors()
 				.find((p) => !p.parent || !this.shouldHideContents(p.parent));
-			newPathMap.set(this.filePath(d), firstVisible);
+			if (firstVisible) {
+				newPathMap.set(this.filePath(d), firstVisible);
+			}
 		});
 		this.pathMap = newPathMap;
 	}
 
-	filteredCodebase() {
+	filteredCodebase(): Directory {
 		return filterFileTree(
 			this.codebase,
 			(f) => !(f.type == FileType.Directory && f.children.length == 0), // filter empty dirs
@@ -478,24 +491,24 @@ export default class CBRVWebview {
 	}
 
 	/** Convert svg viewport units to actual rendered pixel length  */
-	calcPixelLength(viewPortLength: number) {
+	calcPixelLength(viewPortLength: number): number {
 		const viewToRenderedRatio =
 			Math.min(this.width, this.height) / (this.s.diagramSize / this.transform.k);
 		return viewPortLength * viewToRenderedRatio;
 	}
 
-	shouldHideContents(d: d3.HierarchyCircularNode<AnyFile>) {
+	shouldHideContents(d: d3.HierarchyCircularNode<AnyFile>): boolean {
 		return (
 			d.data.type == FileType.Directory &&
 			this.calcPixelLength(d.r) <= this.s.zoom.hideContentsR
 		);
 	}
 
-	shouldHideLabels(d: d3.HierarchyCircularNode<AnyFile>) {
+	shouldHideLabels(d: d3.HierarchyCircularNode<AnyFile>): boolean {
 		return this.calcPixelLength(d.r) <= this.s.zoom.hideLabelsR;
 	}
 
-	onZoom(e: d3.D3ZoomEvent<SVGSVGElement, unknown>) {
+	onZoom(e: d3.D3ZoomEvent<SVGSVGElement, unknown>): void {
 		const oldK = this.transform.k;
 		this.transform = e.transform;
 		this.zoomWindow.attr("transform", this.transform.toString());
@@ -505,13 +518,13 @@ export default class CBRVWebview {
 		}
 	}
 
-	onResize() {
-		[this.width, this.height] = getRect(this.diagram.node());
+	onResize(): void {
+		[this.width, this.height] = getRect(this.svgElement);
 		this.throttledUpdate();
 	}
 
-	emit(message: CBRVWebviewMessage) {
-		this.diagram.node().dispatchEvent(new CustomEvent(`cbrv:send`, { detail: message }));
+	emit(message: CBRVWebviewMessage): void {
+		this.svgElement.dispatchEvent(new CustomEvent(`cbrv:send`, { detail: message }));
 	}
 
 	emitUpdateSettings(
@@ -527,7 +540,7 @@ export default class CBRVWebview {
 		this.emit({ type: "update-settings", settings: settingsUpdate });
 	}
 
-	contextMenu(d: Node) {
+	contextMenu(d: Node): { title: string; action: (d: Node) => void }[] {
 		const fileType = this.resolvedType(d) == FileType.Directory ? "directory" : "file";
 		return this.settings.contextMenu[fileType].map((item, i) => ({
 			title: item.title,

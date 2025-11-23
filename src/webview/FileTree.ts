@@ -9,7 +9,7 @@ export class FileTree {
 		this.onUpdate = onUpdate;
 	}
 
-	public render(root: Directory, container: HTMLElement) {
+	public render(root: Directory, container: HTMLElement): void {
 		container.innerHTML = "";
 		const tree = this.createTree(root, "");
 		container.appendChild(tree);

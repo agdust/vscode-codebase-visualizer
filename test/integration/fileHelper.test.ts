@@ -158,7 +158,7 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 			return undefined;
 		}
 	});
-	expect(areEqual, "expect file trees to be the same").to.be.true;
+	expect(areEqual, "expect file trees to be the same").to.be.equal(true);
 }
 
 describe("Test fileHelper", () => {

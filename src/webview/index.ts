@@ -12,17 +12,11 @@ function main() {
 		const message: CBRVMessage = event.data;
 		if (message.type == "set") {
 			if (!view) {
-				view = new CBRVWebview(
-					message.settings!,
-					message.codebase!,
-				);
+				view = new CBRVWebview(message.settings!, message.codebase!);
 				return;
 			}
 			view.update(message.settings, message.codebase);
 			return;
-		}
-		if (message.type == "tooltip-set") {
-			view!.setTooltip(message.id, message.content);
 		}
 	});
 

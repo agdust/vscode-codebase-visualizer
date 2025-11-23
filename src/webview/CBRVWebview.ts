@@ -22,13 +22,10 @@ import {
 	Directory,
 	WebviewVisualizationSettings,
 	CBRVWebviewMessage,
-	WebviewEndpoint,
 } from "../types";
 import { getExtension, filterFileTree, loopIndex, OptionalKeys } from "../util/util";
-import * as geo from "../util/geometry";
 import { Point, Box } from "../util/geometry";
 import { ellipsisText, getRect } from "./rendering";
-import { RuleMerger } from "../util/ruleMerger";
 
 type Node = d3.HierarchyCircularNode<AnyFile>;
 // Shortcut for d3.Selection
@@ -69,20 +66,6 @@ export default class CBRVWebview {
 			/** Minimum pixel size label font will shrink to at deepest depth. */
 			fontMin: 12,
 		},
-		conn: {
-			/** Space between connections to the same files distance along the circumference of the file circle  */
-			anchorSpacing: 25,
-			/** Duplicate connection offset, in pixels */
-			dupConnPadding: 12,
-			/** Distance between a circle outline and farthest side of a self loop */
-			selfLoopSize: 20,
-			/** Offset of control points in curves, as a percentage of the conn length */
-			controlOffset: 0.2,
-			/** Offset of control points for out-of-screen connections, as a percentage of the conn length */
-			outOfScreenControlOffset: 0.1,
-			/** Width and height of arrow markers */
-			arrowSize: 4,
-		},
 		zoom: {
 			/** Radius when a directory's contents will be hidden (in px) */
 			hideContentsR: 16,
@@ -104,8 +87,6 @@ export default class CBRVWebview {
 
 	includeInput: Selection<HTMLInputElement>;
 	excludeInput: Selection<HTMLInputElement>;
-	showOnHoverSelect: Selection<HTMLSelectElement>;
-
 	// Some rendering variables
 
 	/** Actual current pixel width and height of the svg diagram */
@@ -151,7 +132,7 @@ export default class CBRVWebview {
 			[x, y],
 			[x + width, y + height],
 		];
-		this.zoom = d3
+		const zoom = d3
 			.zoom<SVGSVGElement, unknown>()
 			.on("zoom", (e) => this.onZoom(e))
 			.extent(extent)
@@ -159,7 +140,7 @@ export default class CBRVWebview {
 			.translateExtent(extent);
 
 		this.diagram
-			.call(this.zoom)
+			.call(zoom)
 			.on("dblclick.zoom", null) // double-click zoom interferes with clicking on files and folders
 			.attr("tabindex", 0) // make svg focusable so it can receive keydown events
 			.on("keydown", (event) => {
@@ -168,10 +149,10 @@ export default class CBRVWebview {
 					const dx = key == "ArrowLeft" ? -1 : key == "ArrowRight" ? +1 : 0;
 					const dy = key == "ArrowUp" ? -1 : key == "ArrowDown" ? +1 : 0;
 					const amount = this.s.zoom.panKeyAmount / this.transform.k;
-					this.zoom.translateBy(this.diagram, dx * amount, dy * amount);
+					zoom.translateBy(this.diagram, dx * amount, dy * amount);
 				} else if (event.ctrlKey && ["-", "="].includes(key)) {
 					const amount = this.s.zoom.zoomKeyAmount;
-					this.zoom.scaleBy(this.diagram, key == "=" ? amount : 1 / amount);
+					zoom.scaleBy(this.diagram, key == "=" ? amount : 1 / amount);
 					event.stopPropagation(); // prevent VSCode from zooming the interface
 				}
 			});
@@ -186,8 +167,6 @@ export default class CBRVWebview {
 
 		this.includeInput = d3.select<HTMLInputElement, unknown>("#include");
 		this.excludeInput = d3.select<HTMLInputElement, unknown>("#exclude");
-		this.showOnHoverSelect = d3.select<HTMLSelectElement, unknown>("#show-on-hover");
-
 		const updateFilters = () => {
 			this.emitUpdateSettings({
 				filters: {
@@ -198,12 +177,6 @@ export default class CBRVWebview {
 		};
 		this.includeInput.on("change", updateFilters);
 		this.excludeInput.on("change", updateFilters);
-		this.showOnHoverSelect.on("change", () => {
-			const value = this.showOnHoverSelect.property("value");
-			this.emitUpdateSettings({
-				showOnHover: value == "off" ? false : value,
-			});
-		});
 
 		this.diagram.node()!.focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
 
@@ -236,11 +209,8 @@ export default class CBRVWebview {
 	/** Update the layout/inputs/etc. */
 	updateMisc() {
 		// add some settings as data attributes for CSS access
-		this.diagram.attr("data-show-on-hover", !!this.settings.showOnHover);
-
 		this.includeInput.property("value", this.settings.filters.include);
 		this.excludeInput.property("value", this.settings.filters.exclude);
-		this.showOnHoverSelect.property("value", this.settings.showOnHover || "off");
 	}
 
 	updateCodebase(fullRerender = true) {
@@ -470,81 +440,6 @@ export default class CBRVWebview {
 			(f, path) => !(f.type == FileType.Directory && f.children.length == 0) // filter empty dirs
 		);
 	}
-
-	/**
-	 * Merge all the connections to combine connections going between the same files after being raised to the first
-	 * visible file/folder, using mergeRules.
-	 */
-
-	/** Calculate the paths for each connection. */
-	calculatePaths(connections: WebviewMergedConnection[]): ConnPath[] {
-		const viewbox = this.getViewbox();
-		const directed = this.settings.directed;
-
-		// split out each "end" of the connections and calculate angles and target coords
-		const ends = _(connections)
-			.flatMap<IncompleteConnEnd>((conn) => {
-				const [from, to] = [conn.from, conn.to]
-					.map((e) => (e ? this.pathMap.get(e.file)! : undefined))
-					.map((node, i, arr) => {
-						if (node) {
-							return { target: [node.x, node.y] as Point, r: node.r };
-						} else {
-							const other = arr[+!i]!; // hack to get other node in the array
-							return { target: geo.closestPointOnBorder([other.x, other.y], viewbox) };
-						}
-					});
-
-				let fromTheta = 0;
-				let toTheta = 0;
-				if (conn.from?.file != conn.to?.file) {
-					// theta is meaningless for self loops
-					fromTheta = Math.atan2(
-						to.target[1] - from.target[1],
-						to.target[0] - from.target[0]
-					);
-					// The other angle is just 180 deg around (saves us calculating atan2 again)
-					toTheta = geo.normalizeAngle(fromTheta + Math.PI);
-				}
-
-				return [
-					{
-						conn,
-						end: "from",
-						...from,
-						theta: fromTheta,
-						hasArrow: directed && conn.bidirectional,
-					},
-					{ conn, end: "to", ...to, theta: toTheta, hasArrow: directed },
-				];
-			})
-			.value();
-
-		_(ends)
-			// group all ends that connect to each file
-			.groupBy(({ conn, end }) => conn[end]?.file ?? "")
-			.forEach((ends) => this.anchorEnds(ends)); // anchor ends to actual coords
-
-		return (
-			_(ends as ConnEnd[]) // we've completed the ConnEnds now
-				.chunk(2) // combine from/to back together
-				// group by connections between the same two anchor points
-				.groupBy(([from, to]) => JSON.stringify([from.anchorId, to.anchorId]))
-				.flatMap((pairs, key) =>
-					pairs.map(([from, to], i) => ({
-						conn: from.conn,
-						id: `${key}:${i}`, // uniq id based on anchor points rather than from/to since that isn't unique
-						path: this.calculatePath(from, to, pairs.length, i), // calculate paths with control points etc.
-					}))
-				)
-				.value()
-		);
-	}
-
-	/**
-	 * Pass list of incomplete conn ends that go to the same file, and it will anchor them all.
-	 * NOTE: It mutates the ends in ends.
-	 */
 
 	/** Returns a function used to compute color from file extension */
 	getColorScale(nodes: Node): (d: AnyFile) => string | null {

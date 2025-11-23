@@ -1,12 +1,16 @@
-import { describe, test, expect } from "vitest";
+import { expect, use } from "chai";
+import chaiAsPromised from "chai-as-promised";
 import * as vscode from "vscode";
 import { Uri } from "vscode";
+
+use(chaiAsPromised);
 import * as path from "path";
 
 import { AnyFile, Directory, FileType } from "../../src/types";
 import * as fileHelper from "../../src/util/fileHelper";
 import { deepEqual } from "../../src/util/deepEqual";
 import { writeFileTree } from "./integrationHelpers";
+import { describe, it } from "mocha";
 
 // I can't find a built-in way to get workspaceFolder. __dirname is .../repovis/dist/test/test/integration
 const workspaceFolder = Uri.file([0, 1, 2, 3].reduce((p) => path.dirname(p), __dirname));
@@ -29,12 +33,12 @@ const minimalContents: Directory = {
 		},
 		{ name: "C.txt", size: 1117, type: FileType.File },
 		{ name: "D.md", size: 841, type: FileType.File },
-		{ name: "Supercalifragilisticexpialidocious.py", size: 44, type: FileType.File },
 		{
 			name: "deoxyribonucleicAcid",
 			type: FileType.Directory,
 			children: [{ name: "I", size: 1, type: FileType.File }],
 		},
+		{ name: "Supercalifragilisticexpialidocious.py", size: 44, type: FileType.File },
 	],
 };
 
@@ -140,7 +144,7 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 		return result;
 	};
 	// do a normal expect so we get nice error messages for simple errors
-	expect(stripFields(actual)).toEqual(stripFields(expected));
+	expect(stripFields(actual)).to.deep.equal(stripFields(expected));
 
 	// check that sizes are close to what we expected and symlinks paths match
 	const areEqual = deepEqual(actual, expected, (a, b, key) => {
@@ -157,11 +161,11 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 			return undefined;
 		}
 	});
-	expect(areEqual, "expect file trees to be the same").toBe(true);
+	expect(areEqual, "expect file trees to be the same").to.equal(true);
 }
 
 describe("Test fileHelper", () => {
-	test("getFileTree", async () => {
+	it("getFileTree", async () => {
 		let tree = await fileHelper.getFileTree(minimal);
 		expectTree(tree, minimalContents);
 
@@ -173,7 +177,7 @@ describe("Test fileHelper", () => {
 		expectTree(tree, symlinkContents);
 	});
 
-	test("listToFileTree", async () => {
+	it("listToFileTree", async () => {
 		let fileList = await vscode.workspace.findFiles(
 			new vscode.RelativePattern(minimal, "**/*"),
 		);
@@ -206,10 +210,10 @@ describe("Test fileHelper", () => {
 			],
 		});
 
-		await expect(fileHelper.listToFileTree(minimal, [minimal])).rejects.toThrow(
+		await expect(fileHelper.listToFileTree(minimal, [minimal])).to.be.rejectedWith(
 			/".*sample-repos[\\/]minimal" is not under ".*sample-repos[\\/]minimal"/,
 		);
-		await expect(fileHelper.listToFileTree(minimal, [samples])).rejects.toThrow(
+		await expect(fileHelper.listToFileTree(minimal, [samples])).to.be.rejectedWith(
 			/".*sample-repos" is not under ".*sample-repos[\\/]minimal"/,
 		);
 
@@ -223,22 +227,22 @@ describe("Test fileHelper", () => {
 		expectTree(tree, expected);
 	});
 
-	test("getFilteredFileList and getFilteredFileListTree", async () => {
+	it("getFilteredFileList and getFilteredFileListTree", async () => {
 		const minimalContentsList = [
 			"A/E.txt",
 			"A/F.txt",
 			"A/G.md",
 			"C.txt",
 			"D.md",
-			"Supercalifragilisticexpialidocious.py",
 			"deoxyribonucleicAcid/I",
+			"Supercalifragilisticexpialidocious.py",
 		].map((u) => Uri.joinPath(minimal, u).fsPath);
 
 		let list = await fileHelper.getFilteredFileList(minimal, "**/*");
-		expect(list.map((u) => u.fsPath)).toEqual(minimalContentsList);
+		expect(list.map((u) => u.fsPath)).to.deep.equal(minimalContentsList);
 
 		list = await fileHelper.getFilteredFileList(minimal, "**/*", " "); // should be trimmed and ignored
-		expect(list.map((u) => u.fsPath)).toEqual(minimalContentsList);
+		expect(list.map((u) => u.fsPath)).to.deep.equal(minimalContentsList);
 
 		let tree = await fileHelper.getFilteredFileTree(minimal, "**/*");
 		expectTree(tree, minimalContents);
@@ -268,12 +272,12 @@ describe("Test fileHelper", () => {
 			type: FileType.Directory,
 			children: [
 				{ name: "D.md", size: 841, type: FileType.File },
-				{ name: "Supercalifragilisticexpialidocious.py", size: 44, type: FileType.File },
 				{
 					name: "deoxyribonucleicAcid",
 					type: FileType.Directory,
 					children: [{ name: "I", size: 1, type: FileType.File }],
 				},
+				{ name: "Supercalifragilisticexpialidocious.py", size: 44, type: FileType.File },
 			],
 		});
 

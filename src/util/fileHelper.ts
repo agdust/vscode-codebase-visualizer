@@ -54,23 +54,24 @@ export async function getFileTree(
 	type = type ?? (await vscode.workspace.fs.stat(uri)).type;
 	base = base ?? uri;
 
-	if (type == FileType.Directory) {
+	if (type === FileType.Directory) {
 		const files = await vscode.workspace.fs.readDirectory(uri);
 		const childrenResults = await Promise.allSettled(
 			files.map(([name, type]) => getFileTree(Uri.joinPath(uri, name), base, type)),
 		);
 		const children = childrenResults
-			.filter((rslt) => rslt.status == "fulfilled")
-			.map((rslt) => (rslt as PromiseFulfilledResult<AnyFile>).value);
+			.filter((result) => result.status == "fulfilled")
+			.map((result) => (result as PromiseFulfilledResult<AnyFile>).value)
+			.toSorted((a, b) => a.name.localeCompare(b.name));
 
 		const folder = (await createAnyFile(type, uri, base)) as Directory;
 		return {
 			...folder,
-			children: children.sort((a, b) => a.name.localeCompare(b.name)),
+			children,
 		};
-	} else {
-		return await createAnyFile(type, uri, base);
 	}
+
+	return await createAnyFile(type, uri, base);
 }
 
 /** Convert globs to RelativePatterns with similar semantics as the built-in VSCode search interface  */
@@ -107,9 +108,9 @@ export async function getFilteredFileList(
 	exclude?: string,
 ): Promise<Uri[]> {
 	const [includePattern, excludePattern] = parseGlobs(base, include, exclude);
-	let fileList = await vscode.workspace.findFiles(includePattern, excludePattern);
+	const fileList = await vscode.workspace.findFiles(includePattern, excludePattern);
 	// note: broken symlinks don't get returned by findFiles
-	fileList = fileList.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+	fileList.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
 	return fileList;
 }
 
@@ -136,7 +137,7 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 			}
 			return parts.map((_s, i, arr) => Uri.joinPath(base, ...arr.slice(0, i + 1)));
 		})
-		.sort((a, b) => a.fsPath.localeCompare(b.fsPath)) // Sorting by string path will make sure that directories occur before their children.
+		.toSorted((a, b) => a.fsPath.localeCompare(b.fsPath)) // Sorting by string path will make sure that directories occur before their children.
 		.filter((p, i, arr) => i === 0 || p.fsPath !== (arr[i - 1] as Uri).fsPath); // uniq optimized for sorted
 
 	// query all the stat data asynchronously

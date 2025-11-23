@@ -44,9 +44,8 @@
 		"watch:extension": "vite build --config ./vite.config.ts --watch",
 		"watch:webview": "vite build --config ./vite.webview.config.ts --watch",
 		"test": "npm run test:unit && npm run test:integration",
-		"test:ui": "vitest --ui",
-		"test:unit": "vitest run",
-		"test:unit:watch": "vitest",
+		"test:unit": "mocha -r ts-node/register test/*.test.ts",
+		"test:unit:watch": "mocha -r ts-node/register test/*.test.ts --watch",
 		"test:integration": "npm run pretest && node ./dist/test/test/integration/run.js",
 		"pretest": "tsc --project test/integration",
 		"generate-docs": "typedoc",
@@ -55,6 +54,8 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
+		"@types/chai": "^5.2.3",
+		"@types/chai-as-promised": "^8.0.2",
 		"@types/d3": "^7.4.3",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.13.14",
@@ -63,9 +64,10 @@
 		"@types/webpack": "^5.28.5",
 		"@typescript-eslint/eslint-plugin": "^8.47.0",
 		"@typescript-eslint/parser": "^8.47.0",
-		"@vitest/ui": "^4.0.13",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.0",
+		"chai": "^6.2.1",
+		"chai-as-promised": "^8.0.2",
 		"eslint": "^9.39.1",
 		"globals": "^16.5.0",
 		"mocha": "^11.7.5",
@@ -74,13 +76,12 @@
 		"ts-node": "^10.9.2",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.47.0",
-		"vite": "^7.2.4",
-		"vitest": "^4.0.13"
+		"vite": "^7.2.4"
 	},
 	"dependencies": {
+		"@vscode/debugprotocol": "^1.68.0",
 		"d3": "^7.9.0",
 		"d3-context-menu": "^2.1.0",
-		"tippy.js": "^6.3.7",
-		"@vscode/debugprotocol": "^1.68.0"
+		"tippy.js": "^6.3.7"
 	}
 }

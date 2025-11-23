@@ -1,42 +1,30 @@
-import { expect } from "vitest";
+import { use } from "chai";
 import { deepEqual } from "../src/util/deepEqual";
 
-interface CustomMatchers<R = unknown> {
-	deepCloseTo(expected: unknown, epsilon?: number): R;
+declare global {
+	// eslint-disable-next-line @typescript-eslint/no-namespace
+	export namespace Chai {
+		interface Assertion {
+			deepCloseTo(expected: unknown, epsilon?: number): void;
+		}
+	}
 }
 
-declare module "vitest" {
-	// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-explicit-any
-	interface Assertion<T = any> extends CustomMatchers<T> {}
-
-	// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-	interface AsymmetricMatchersContaining extends CustomMatchers {}
-}
-
-expect.extend({
-	deepCloseTo(received, expected, epsilon = 1e-8) {
+use((chai, _utils) => {
+	chai.Assertion.addMethod("deepCloseTo", function (expected: unknown, epsilon = 1e-8) {
+		const received = this._obj;
 		const pass = deepEqual(received, expected, (a, b) =>
 			[a, b].every((x) => typeof x == "number")
 				? Math.abs((a as number) - (b as number)) < epsilon
 				: undefined,
 		);
 
-		if (pass) {
-			return {
-				message: () =>
-					`expected ${this.utils.printReceived(
-						received,
-					)} to not be approximately equal to ${this.utils.printExpected(expected)}`,
-				pass: true,
-			};
-		}
-
-		return {
-			message: () =>
-				`expected ${this.utils.printReceived(
-					received,
-				)} to be approximately equal to ${this.utils.printExpected(expected)}`,
-			pass: false,
-		};
-	},
+		this.assert(
+			pass,
+			"expected #{this} to be approximately equal to #{exp}",
+			"expected #{this} to not be approximately equal to #{exp}",
+			expected,
+			received,
+		);
+	});
 });

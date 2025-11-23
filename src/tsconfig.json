@@ -1,8 +1,7 @@
 {
 	"extends": "../tsconfig.json",
 	"compilerOptions": {
-		"rootDir": ".",
-		"lib": ["es2022"]
+		"rootDir": "."
 	},
 	"include": ["**/*.ts"],
 	"exclude": ["webview/**"]

@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { expect } from "chai";
+import { describe, it } from "mocha";
 
 import { AnyFile, FileType } from "../src/types";
 import { getExtension } from "../src/util/getExtension";
@@ -8,17 +9,17 @@ import { loopIndex } from "../src/util/loopIndex";
 
 describe("Test utils.ts", () => {
 	it("test getExtension", () => {
-		expect(getExtension("a.txt")).toEqual("txt");
-		expect(getExtension("path/to/a.txt.zip")).toEqual("zip");
+		expect(getExtension("a.txt")).to.equal("txt");
+		expect(getExtension("path/to/a.txt.zip")).to.equal("zip");
 
-		expect(getExtension("a/path/to/file")).toEqual("");
-		expect(getExtension("a/path/folder.txt/file")).toEqual("");
+		expect(getExtension("a/path/to/file")).to.equal("");
+		expect(getExtension("a/path/folder.txt/file")).to.equal("");
 
-		expect(getExtension("")).toEqual("");
-		expect(getExtension(".gitignore")).toEqual("");
-		expect(getExtension(".")).toEqual("");
-		expect(getExtension("..")).toEqual("");
-		expect(getExtension("a.")).toEqual("");
+		expect(getExtension("")).to.equal("");
+		expect(getExtension(".gitignore")).to.equal("");
+		expect(getExtension(".")).to.equal("");
+		expect(getExtension("..")).to.equal("");
+		expect(getExtension("a.")).to.equal("");
 	});
 
 	describe("test filterFileTree", () => {
@@ -42,43 +43,45 @@ describe("Test utils.ts", () => {
 		const file: AnyFile = { name: "empty", type: FileType.File, size: 4 };
 
 		it("basic", () => {
-			expect(filterFileTree(tree, () => true)).toEqual(tree);
-			expect(filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).toEqual({
-				name: "a",
-				type: FileType.Directory,
-				children: [
-					{
-						name: "b",
-						type: FileType.Directory,
-						children: [{ name: "c", type: FileType.File, size: 1 }],
-					},
-				],
-			});
+			expect(filterFileTree(tree, () => true)).to.deep.equal(tree);
+			expect(filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).to.deep.equal(
+				{
+					name: "a",
+					type: FileType.Directory,
+					children: [
+						{
+							name: "b",
+							type: FileType.Directory,
+							children: [{ name: "c", type: FileType.File, size: 1 }],
+						},
+					],
+				},
+			);
 		});
 
 		it("can't remove root node", () => {
-			expect(filterFileTree(tree, () => false)).toEqual({
+			expect(filterFileTree(tree, () => false)).to.deep.equal({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
 			});
-			expect(filterFileTree(empty, () => true)).toEqual(empty);
-			expect(filterFileTree(empty, () => false)).toEqual(empty);
-			expect(filterFileTree(file, () => true)).toEqual(file);
-			expect(filterFileTree(file, () => false)).toEqual(file);
+			expect(filterFileTree(empty, () => true)).to.deep.equal(empty);
+			expect(filterFileTree(empty, () => false)).to.deep.equal(empty);
+			expect(filterFileTree(file, () => true)).to.deep.equal(file);
+			expect(filterFileTree(file, () => false)).to.deep.equal(file);
 		});
 
 		it("paths", () => {
-			let paths: string[] = [];
+			const paths: string[] = [];
 			filterFileTree(tree, (_, path) => {
 				paths.push(path);
 				return true;
 			});
-			paths = paths.concat().sort();
+			paths.sort((a, b) => a.localeCompare(b));
 
-			expect(paths).toEqual(["b", "b/c", "b/d", "e", "f"]);
+			expect(paths).to.deep.equal(["b", "b/c", "b/d", "e", "f"]);
 
-			expect(filterFileTree(tree, () => false)).toEqual({
+			expect(filterFileTree(tree, () => false)).to.deep.equal({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
@@ -114,7 +117,7 @@ describe("Test utils.ts", () => {
 					tree,
 					(f) => f.type != FileType.Directory || f.children.length > 0,
 				),
-			).toEqual({
+			).to.deep.equal({
 				name: "A",
 				type: FileType.Directory,
 				children: [
@@ -130,37 +133,38 @@ describe("Test utils.ts", () => {
 	});
 
 	it("test normalizedJSONStringify", () => {
-		expect(normalizedJSONStringify(1)).toEqual("1");
-		expect(normalizedJSONStringify("a")).toEqual('"a"');
-		expect(normalizedJSONStringify(null)).toEqual("null");
-		expect(normalizedJSONStringify([1, 2, 3])).toEqual("[1,2,3]");
-		expect(normalizedJSONStringify({ a: 2, b: 1 })).toEqual('{"a":2,"b":1}');
-		expect(normalizedJSONStringify({ b: 1, a: 2 })).toEqual('{"a":2,"b":1}');
-		expect(normalizedJSONStringify({})).toEqual("{}");
+		expect(normalizedJSONStringify(1)).to.equal("1");
+		expect(normalizedJSONStringify("a")).to.equal('"a"');
+		expect(normalizedJSONStringify(null)).to.equal("null");
+		expect(normalizedJSONStringify([1, 2, 3])).to.equal("[1,2,3]");
+		expect(normalizedJSONStringify({ a: 2, b: 1 })).to.equal('{"a":2,"b":1}');
+		expect(normalizedJSONStringify({ b: 1, a: 2 })).to.equal('{"a":2,"b":1}');
+		expect(normalizedJSONStringify({})).to.equal("{}");
 		expect(
 			normalizedJSONStringify({
 				b: 1,
 				a: { d: [1, 2, 3], c: null },
 			}),
-		).toEqual('{"a":{"c":null,"d":[1,2,3]},"b":1}');
+		).to.equal('{"a":{"c":null,"d":[1,2,3]},"b":1}');
 	});
 
 	it("test loopIndex", () => {
-		expect(loopIndex(3, 5)).toEqual(3);
-		expect(loopIndex(0, 5)).toEqual(0);
-		expect(loopIndex(5, 5)).toEqual(0);
-		expect(loopIndex(6, 5)).toEqual(1);
-		expect(loopIndex(12, 5)).toEqual(2);
-		expect(loopIndex(-1, 5)).toEqual(4);
-		expect(loopIndex(-2, 5)).toEqual(3);
-		expect(loopIndex(-5, 5)).toEqual(0);
-		expect(loopIndex(-7, 5)).toEqual(3);
-		expect(loopIndex(-12, 5)).toEqual(3);
+		expect(loopIndex(3, 5)).to.equal(3);
+		expect(loopIndex(0, 5)).to.equal(0);
+		expect(loopIndex(5, 5)).to.equal(0);
+		expect(loopIndex(6, 5)).to.equal(1);
+		expect(loopIndex(12, 5)).to.equal(2);
+		expect(loopIndex(-1, 5)).to.equal(4);
+		expect(loopIndex(-2, 5)).to.equal(3);
+		expect(loopIndex(-5, 5)).to.equal(0);
+		expect(loopIndex(-7, 5)).to.equal(3);
+		expect(loopIndex(-12, 5)).to.equal(3);
 
-		expect(loopIndex(0, 1)).toEqual(0);
-		expect(loopIndex(1, 1)).toEqual(0);
-		expect(loopIndex(-1, 1)).toEqual(0);
+		expect(loopIndex(0, 1)).to.equal(0);
+		expect(loopIndex(1, 1)).to.equal(0);
+		expect(loopIndex(-1, 1)).to.equal(0);
 
-		expect(loopIndex(0, 0)).toEqual(NaN);
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
+		expect(loopIndex(0, 0)).to.be.NaN;
 	});
 });

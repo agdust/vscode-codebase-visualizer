@@ -2,6 +2,7 @@ import { Assertion } from "chai";
 import _ from "lodash";
 
 declare global {
+	// eslint-disable-next-line @typescript-eslint/no-namespace
 	export namespace Chai {
 		interface Assertion {
 			deepCloseTo(expected: any, epsilon?: number): Promise<void>;

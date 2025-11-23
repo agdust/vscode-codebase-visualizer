@@ -160,6 +160,6 @@ describe("Test utils.ts", () => {
 		expect(util.loopIndex(1, 1)).to.eql(0);
 		expect(util.loopIndex(-1, 1)).to.eql(0);
 
-		expect(util.loopIndex(0, 0)).to.be.NaN;
+		expect(util.loopIndex(0, 0)).to.eql(NaN);
 	});
 });

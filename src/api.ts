@@ -6,9 +6,9 @@ import * as vscode from "vscode";
 
 import {
 	Visualization,
-	VisualizationSettings,
-	ContextMenuItem,
-	VisualizationState,
+	type VisualizationSettings,
+	type ContextMenuItem,
+	type VisualizationState,
 } from "./Visualization";
 
 /**
@@ -49,4 +49,5 @@ export class API {
 }
 
 // Re-export public types
-export { type Visualization, VisualizationSettings, ContextMenuItem, VisualizationState };
+export { Visualization };
+export type { VisualizationSettings, ContextMenuItem, VisualizationState };

@@ -1,7 +1,4 @@
-import chai, { expect } from "chai";
-import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
-import { describe, test } from "mocha";
+import { describe, test, expect } from "vitest";
 import * as vscode from "vscode";
 import { Uri } from "vscode";
 import _ from "lodash";
@@ -141,7 +138,7 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 		}
 	};
 	// do a normal expect so we get nice error messages for simple errors
-	expect(stripFields(actual)).to.eql(stripFields(expected));
+	expect(stripFields(actual)).toEqual(stripFields(expected));
 
 	// check that sizes are close to what we expected and symlinks paths match
 	const areEqual = _.isEqualWith(actual, expected, (a, b, key) => {
@@ -158,7 +155,7 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 			return undefined;
 		}
 	});
-	expect(areEqual, "expect file trees to be the same").to.be.equal(true);
+	expect(areEqual, "expect file trees to be the same").toBe(true);
 }
 
 describe("Test fileHelper", () => {
@@ -207,10 +204,10 @@ describe("Test fileHelper", () => {
 			],
 		});
 
-		await expect(fileHelper.listToFileTree(minimal, [minimal])).to.be.rejectedWith(
+		await expect(fileHelper.listToFileTree(minimal, [minimal])).rejects.toThrow(
 			/".*sample-codebases[\\/]minimal" is not under ".*sample-codebases[\\/]minimal"/,
 		);
-		await expect(fileHelper.listToFileTree(minimal, [samples])).to.be.rejectedWith(
+		await expect(fileHelper.listToFileTree(minimal, [samples])).rejects.toThrow(
 			/".*sample-codebases" is not under ".*sample-codebases[\\/]minimal"/,
 		);
 
@@ -236,10 +233,10 @@ describe("Test fileHelper", () => {
 		].map((u) => Uri.joinPath(minimal, u).fsPath);
 
 		let list = await fileHelper.getFilteredFileList(minimal, "**/*");
-		expect(list.map((u) => u.fsPath)).to.eql(minimalContentsList);
+		expect(list.map((u) => u.fsPath)).toEqual(minimalContentsList);
 
 		list = await fileHelper.getFilteredFileList(minimal, "**/*", " "); // should be trimmed and ignored
-		expect(list.map((u) => u.fsPath)).to.eql(minimalContentsList);
+		expect(list.map((u) => u.fsPath)).toEqual(minimalContentsList);
 
 		let tree = await fileHelper.getFilteredFileTree(minimal, "**/*");
 		expectTree(tree, minimalContents);

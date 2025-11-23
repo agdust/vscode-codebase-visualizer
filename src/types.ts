@@ -5,12 +5,14 @@ import { DeepPartial } from "ts-essentials";
  * Just an alias for VSCode's FileType enum.
  * I've redeclared it from scratch here so that it can be used inside the webview (vscode isn't available there)
  */
-export enum FileType {
-	Unknown = 0,
-	File = 1,
-	Directory = 2,
-	SymbolicLink = 64,
-}
+export const FileType = {
+	Unknown: 0,
+	File: 1,
+	Directory: 2,
+	SymbolicLink: 64,
+} as const;
+
+export type FileType = (typeof FileType)[keyof typeof FileType];
 
 /**
  * An abstract representation of files and directories that can be sent to the webview.
@@ -22,12 +24,12 @@ interface BaseFile {
 }
 
 export interface File extends BaseFile {
-	type: FileType.File;
+	type: typeof FileType.File;
 	size: number;
 }
 
 export interface Directory extends BaseFile {
-	type: FileType.Directory;
+	type: typeof FileType.Directory;
 	children: AnyFile[];
 }
 
@@ -36,8 +38,8 @@ export interface Directory extends BaseFile {
  * separate fields to make it easier to work with and do type inference in the Visualization.
  */
 export interface SymbolicLink extends BaseFile {
-	type: FileType.SymbolicLink;
-	linkedType: FileType.Directory | FileType.File;
+	type: typeof FileType.SymbolicLink;
+	linkedType: typeof FileType.Directory | typeof FileType.File;
 	link: string;
 	resolved: string; // resolved path relative to your codebase, or full path if external.
 }

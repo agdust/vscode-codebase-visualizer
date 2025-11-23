@@ -33,7 +33,7 @@ export class FileTree {
 		toggleEl.className = "tree-toggle";
 		toggleEl.textContent = isDir ? "▼" : "";
 		if (isDir) {
-			toggleEl.onclick = (e) => {
+			toggleEl.onclick = (e: MouseEvent) => {
 				e.stopPropagation();
 				nodeEl.classList.toggle("expanded");
 				toggleEl.textContent = nodeEl.classList.contains("expanded") ? "▼" : "▶";
@@ -45,7 +45,7 @@ export class FileTree {
 		const checkbox = document.createElement("input");
 		checkbox.type = "checkbox";
 		checkbox.checked = !this.excludedPaths.has(currentPath);
-		checkbox.onclick = (e) => {
+		checkbox.onclick = (e: MouseEvent) => {
 			e.stopPropagation();
 			const isChecked = checkbox.checked;
 			if (isChecked) {
@@ -56,8 +56,8 @@ export class FileTree {
 			// If directory, toggle children
 			if (isDir) {
 				const childrenCheckboxes = nodeEl.querySelectorAll('input[type="checkbox"]');
-				childrenCheckboxes.forEach((cb: any) => {
-					cb.checked = isChecked;
+				childrenCheckboxes.forEach((cb) => {
+					(cb as HTMLInputElement).checked = isChecked;
 				});
 			}
 			this.onUpdate();

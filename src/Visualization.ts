@@ -231,10 +231,12 @@ export class Visualization {
 				} else if (message.type == "context-menu") {
 					const [menu, i] = message.action.split("-");
 					const uri = this.getUri(message.file);
-					this.settings.contextMenu[menu as "file" | "directory"][Number(i)].action(
-						uri,
-						this,
-					);
+					const menuType = menu as "file" | "directory";
+					const index = Number(i);
+					const menuItem = this.settings.contextMenu[menuType]?.[index];
+					if (menuItem) {
+						menuItem.action(uri, this);
+					}
 				}
 			},
 			undefined,
@@ -364,7 +366,7 @@ export class Visualization {
 		);
 
 		const html = fs.readFileSync(path.resolve(".", "webview.html"), {
-			encoding: "UTF-8",
+			encoding: "utf-8",
 		});
 
 		return html.replace("{{scriptUri}}", scriptUri.toString());

@@ -6,6 +6,12 @@
 		"outDir": "dist",
 		"sourceMap": true,
 		"strict": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"erasableSyntaxOnly": true,
 		"skipLibCheck": true,
 		"esModuleInterop": true
 	},

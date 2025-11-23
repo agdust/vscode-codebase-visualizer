@@ -44,7 +44,7 @@ function main() {
 
 	const fileTree = new FileTree(excludedPaths, updateFilters);
 
-	addEventListener("message", (event) => {
+	addEventListener("message", (event: MessageEvent) => {
 		const message: CBRVMessage = event.data;
 		if (message.type == "set") {
 			if (message.settings) {
@@ -57,7 +57,7 @@ function main() {
 			}
 
 			if (!view) {
-				view = new CBRVWebview(message.settings!, message.codebase!);
+				view = new CBRVWebview(message.settings, message.codebase);
 				return;
 			}
 			view.update(message.settings, message.codebase);
@@ -66,8 +66,8 @@ function main() {
 	});
 
 	// just pass events through as webview messages
-	svg.addEventListener(`cbrv:send`, (event: any) => {
-		vscode.postMessage(event.detail as CBRVWebviewMessage);
+	svg.addEventListener(`cbrv:send`, (event: Event) => {
+		vscode.postMessage((event as CustomEvent).detail as CBRVWebviewMessage);
 	});
 
 	const toggleSidebar = () => {

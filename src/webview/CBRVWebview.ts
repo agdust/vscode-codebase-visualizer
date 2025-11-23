@@ -327,13 +327,16 @@ export default class CBRVWebview {
 
 					all
 						.filter((d) => d.depth > 0) // don't tooltip to root folder
-						.each((d, i, nodes) =>
-							tippy(nodes[i], {
-								content: this.filePath(d),
-								delay: [1000, 0], // [show, hide]
-								followCursor: true,
-							}),
-						);
+						.each((d, i, nodes) => {
+							const node = nodes[i];
+							if (node) {
+								tippy(node, {
+									content: this.filePath(d),
+									delay: [1000, 0], // [show, hide]
+									followCursor: true,
+								});
+							}
+						});
 
 					return all;
 				},
@@ -375,25 +378,35 @@ export default class CBRVWebview {
 		files
 			.select<SVGTSpanElement>(".label")
 			.text((d) => d.data.name)
-			.each((d, i, nodes) =>
-				ellipsisText(nodes[i], d.r * 2, d.r * 2, this.s.label.padding),
-			);
+			.each((d, i, nodes) => {
+				const node = nodes[i];
+				if (node) {
+					ellipsisText(node, d.r * 2, d.r * 2, this.s.label.padding);
+				}
+			});
 
 		const directoryLabels = directories
 			.select<SVGTextPathElement>(".label")
 			.text((d) => d.data.name)
-			.each((d, i, nodes) =>
-				ellipsisText(nodes[i], Math.PI * d.r /* 1/2 circumference */),
-			);
+			.each((d, i, nodes) => {
+				const node = nodes[i];
+				if (node) {
+					ellipsisText(node, Math.PI * d.r /* 1/2 circumference */);
+				}
+			});
 
 		// Set the label background to the length of the labels
 		directories.select<SVGTextElement>(".label-background").each((d, i, nodes) => {
-			const length = directoryLabels.nodes()[i].getComputedTextLength() + 4;
-			const angle = length / d.r;
-			const top = (3 * Math.PI) / 2;
-			const path = d3.path();
-			path.arc(0, 0, d.r, top - angle / 2, top + angle / 2);
-			nodes[i].setAttribute("d", path.toString());
+			const labelNode = directoryLabels.nodes()[i];
+			const node = nodes[i];
+			if (labelNode && node) {
+				const length = labelNode.getComputedTextLength() + 4;
+				const angle = length / d.r;
+				const top = (3 * Math.PI) / 2;
+				const path = d3.path();
+				path.arc(0, 0, d.r, top - angle / 2, top + angle / 2);
+				node.setAttribute("d", path.toString());
+			}
 		});
 
 		this.allFilesSelection = all;
@@ -460,7 +473,7 @@ export default class CBRVWebview {
 	}
 
 	/** Returns the type of the file if its a regular file, or its linked file type if its a symlink. */
-	resolvedType(d: Node): FileType.File | FileType.Directory {
+	resolvedType(d: Node): typeof FileType.File | typeof FileType.Directory {
 		return d.data.type == FileType.SymbolicLink ? d.data.linkedType : d.data.type;
 	}
 

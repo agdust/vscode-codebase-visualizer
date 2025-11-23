@@ -4,14 +4,63 @@ body {
 	padding: 0;
 	margin: 0;
 	overflow: hidden;
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size);
+	color: var(--vscode-foreground);
+	background-color: var(--vscode-editor-background);
+}
+
+#app {
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+
+#sidebar {
+	width: 300px;
+	background-color: var(--vscode-sideBar-background);
+	border-right: 1px solid var(--vscode-sideBar-border);
 	display: flex;
 	flex-direction: column;
+	transition: width 0.2s ease;
+	overflow: hidden;
+	flex-shrink: 0;
+}
+
+#sidebar.collapsed {
+	width: 0;
+	border-right: none;
+}
+
+.sidebar-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px;
+	background-color: var(--vscode-sideBarSectionHeader-background);
+	color: var(--vscode-sideBarSectionHeader-foreground);
+	font-weight: bold;
+}
+
+.sidebar-title {
+	text-transform: uppercase;
+	font-size: 11px;
+}
+
+#content {
+	flex-grow: 1;
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 }
 
 #diagram {
 	flex-grow: 1;
 	padding: 0;
 	margin: 0;
+	width: 100%;
+	height: 100%;
 
 	text-anchor: middle;
 	dominant-baseline: middle;
@@ -71,19 +120,62 @@ body {
 
 /** Styling for the filter inputs */
 #filters {
+	padding: 10px;
 	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
-#filters .form-input {
+
+.form-group {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.form-group label {
+	font-size: 12px;
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.form-group input {
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border);
+	padding: 4px;
+	border-radius: 2px;
+}
+
+.form-group input:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	border-color: var(--vscode-focusBorder);
+}
+
+.icon-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-icon-foreground);
+	padding: 4px;
+	border-radius: 4px;
 	display: flex;
 	align-items: center;
-	padding: 5px 10px;
+	justify-content: center;
 }
-#filters .form-input label {
-	padding-right: 5px;
+
+.icon-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
 }
-#filters .form-input input:not([type]),
-#filters .form-input input[type="text"] {
-	flex-grow: 1;
-	min-width: 4em;
-	width: 0; /** Have to override default width */
+
+#open-sidebar {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 100;
+	background-color: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-widget-border);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#sidebar:not(.collapsed) + #content #open-sidebar {
+	display: none;
 }

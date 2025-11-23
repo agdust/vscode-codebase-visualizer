@@ -118,8 +118,6 @@ export default class CBRVWebview {
 	fileLayer: Selection<SVGGElement>;
 	allFilesSelection?: Selection<SVGGElement, Node>;
 
-	includeInput: Selection<HTMLInputElement>;
-	excludeInput: Selection<HTMLInputElement>;
 	// Some rendering variables
 
 	/** Actual current pixel width and height of the svg diagram */
@@ -198,19 +196,6 @@ export default class CBRVWebview {
 			plugins: [followCursor],
 		});
 
-		this.includeInput = d3.select<HTMLInputElement, unknown>("#include");
-		this.excludeInput = d3.select<HTMLInputElement, unknown>("#exclude");
-		const updateFilters = () => {
-			this.emitUpdateSettings({
-				filters: {
-					include: this.includeInput.property("value").trim(),
-					exclude: this.excludeInput.property("value").trim(),
-				},
-			});
-		};
-		this.includeInput.on("change", updateFilters);
-		this.excludeInput.on("change", updateFilters);
-
 		this.diagram.node()!.focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
 
 		this.update(this.settings, this.codebase);
@@ -234,16 +219,6 @@ export default class CBRVWebview {
 		this.codebase = codebase ?? this.codebase;
 
 		this.updateCodebase(!!(settings || codebase));
-
-		// this is cheap and influenced by multiple things so always update it.
-		this.updateMisc();
-	}
-
-	/** Update the layout/inputs/etc. */
-	updateMisc() {
-		// add some settings as data attributes for CSS access
-		this.includeInput.property("value", this.settings.filters.include);
-		this.excludeInput.property("value", this.settings.filters.exclude);
 	}
 
 	updateCodebase(fullRerender = true) {

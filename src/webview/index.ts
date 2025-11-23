@@ -1,5 +1,5 @@
 import CBRVWebview from "./CBRVWebview";
-import { CBRVMessage, CBRVWebviewMessage, Directory, AnyFile, FileType } from "../types";
+import { CBRVMessage, CBRVWebviewMessage } from "../types";
 import "./CBRVStyles.css";
 import { FileTree } from "./FileTree";
 
@@ -7,17 +7,25 @@ const vscode = acquireVsCodeApi();
 
 function main() {
 	let view: CBRVWebview | undefined;
-	const svg = document.getElementById("diagram")!;
+	const getElement = <T extends HTMLElement = HTMLElement>(id: string): T => {
+		const element = document.getElementById(id);
+		if (!element) {
+			throw new Error(`Element with id "${id}" not found`);
+		}
+		return element as T;
+	};
+
+	const svg = getElement("diagram");
 
 	// Sidebar elements
-	const sidebar = document.getElementById("sidebar")!;
-	const openSidebarBtn = document.getElementById("open-sidebar")!;
-	const closeSidebarBtn = document.getElementById("close-sidebar")!;
-	const includeInput = document.getElementById("include") as HTMLInputElement;
-	const excludeInput = document.getElementById("exclude") as HTMLInputElement;
-	const fileTreeContainer = document.getElementById("file-tree")!;
-	const fileTreeHeader = document.getElementById("file-tree-header")!;
-	const fileTreeToggleIcon = document.getElementById("file-tree-toggle-icon")!;
+	const sidebar = getElement("sidebar");
+	const openSidebarBtn = getElement("open-sidebar");
+	const closeSidebarBtn = getElement("close-sidebar");
+	const includeInput = getElement<HTMLInputElement>("include");
+	const excludeInput = getElement<HTMLInputElement>("exclude");
+	const fileTreeContainer = getElement<HTMLDivElement>("file-tree");
+	const fileTreeHeader = getElement("file-tree-header");
+	const fileTreeToggleIcon = getElement("file-tree-toggle-icon");
 
 	// State for file tree checkboxes
 	const excludedPaths = new Set<string>();
@@ -46,6 +54,7 @@ function main() {
 
 	addEventListener("message", (event: MessageEvent) => {
 		const message: CBRVMessage = event.data;
+
 		if (message.type == "set") {
 			if (message.settings) {
 				includeInput.value = message.settings.filters.include;
@@ -56,12 +65,19 @@ function main() {
 				fileTree.render(message.codebase, fileTreeContainer);
 			}
 
-			if (!view) {
+			if (view) {
+				view.update(message.settings, message.codebase);
+				return;
+			}
+
+			if (message.settings && message.codebase) {
 				view = new CBRVWebview(message.settings, message.codebase);
 				return;
 			}
-			view.update(message.settings, message.codebase);
-			return;
+
+			throw new Error(
+				"Codebase Visualizer: View is not set, and either settings or codebase are not provided",
+			);
 		}
 	});
 

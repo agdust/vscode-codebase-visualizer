@@ -1,11 +1,12 @@
 import { FileType, AnyFile } from "../types";
+import { isObject } from "./isObject";
 
 /**
  * Returns the extension from a file name excluding the ".", or "" if there is none.
  * Hidden files count as having no extension.
  */
 export function getExtension(filename: string): string {
-	filename = filename.split("/").at(-1)!; // remove any path
+	filename = filename.split("/").at(-1) as string; // remove any path
 	const dotPos = filename.lastIndexOf(".");
 	return dotPos > 0 ? filename.slice(dotPos + 1) : "";
 }
@@ -39,21 +40,19 @@ export function filterFileTree<T extends AnyFile>(
 /**
  * Converts a value to a normalized JSON string, sorting object keys.
  */
-export function normalizedJSONStringify(val: any) {
-	const replacer = (key: string, val: any) => {
-		if (typeof val == "object" && val !== null && !Array.isArray(val)) {
+export function normalizedJSONStringify(val: unknown): string {
+	return JSON.stringify(val, (_key: string, val: unknown) => {
+		if (isObject(val)) {
 			return Object.keys(val)
 				.sort()
-				.reduce<Record<string, any>>((o, k) => {
-					o[k] = val[k];
-					return o;
+				.reduce<Record<string, unknown>>((acc, key) => {
+					acc[key] = val[key];
+					return acc;
 				}, {});
 		} else {
 			return val;
 		}
-	};
-
-	return JSON.stringify(val, replacer);
+	});
 }
 
 /**

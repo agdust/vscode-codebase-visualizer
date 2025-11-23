@@ -40,7 +40,7 @@ describe("Test utils.ts", () => {
 		const file: AnyFile = { name: "empty", type: FileType.File, size: 4 };
 
 		it("basic", () => {
-			expect(util.filterFileTree(tree, (f) => true)).toEqual(tree);
+			expect(util.filterFileTree(tree, () => true)).toEqual(tree);
 			expect(util.filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).toEqual({
 				name: "a",
 				type: FileType.Directory,
@@ -55,20 +55,20 @@ describe("Test utils.ts", () => {
 		});
 
 		it("can't remove root node", () => {
-			expect(util.filterFileTree(tree, (f) => false)).toEqual({
+			expect(util.filterFileTree(tree, () => false)).toEqual({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
 			});
-			expect(util.filterFileTree(empty, (f) => true)).toEqual(empty);
-			expect(util.filterFileTree(empty, (f) => false)).toEqual(empty);
-			expect(util.filterFileTree(file, (f) => true)).toEqual(file);
-			expect(util.filterFileTree(file, (f) => false)).toEqual(file);
+			expect(util.filterFileTree(empty, () => true)).toEqual(empty);
+			expect(util.filterFileTree(empty, () => false)).toEqual(empty);
+			expect(util.filterFileTree(file, () => true)).toEqual(file);
+			expect(util.filterFileTree(file, () => false)).toEqual(file);
 		});
 
 		it("paths", () => {
 			let paths: string[] = [];
-			const result = util.filterFileTree(tree, (f, path) => {
+			util.filterFileTree(tree, (f, path) => {
 				paths.push(path);
 				return true;
 			});
@@ -76,7 +76,7 @@ describe("Test utils.ts", () => {
 
 			expect(paths).toEqual(["b", "b/c", "b/d", "e", "f"]);
 
-			expect(util.filterFileTree(tree, (f) => false)).toEqual({
+			expect(util.filterFileTree(tree, () => false)).toEqual({
 				name: "a",
 				type: FileType.Directory,
 				children: [],

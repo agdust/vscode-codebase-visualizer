@@ -12,7 +12,7 @@ import _ from "lodash";
 const d3ContextMenu = require("d3-context-menu"); // eslint-disable-line
 import "d3-context-menu/css/d3-context-menu.css"; // manually require the CSS
 
-import tippy, { followCursor, Instance as Tippy } from "tippy.js";
+import tippy, { followCursor } from "tippy.js";
 import "tippy.js/dist/tippy.css"; // optional for styling
 import { DeepPartial } from "ts-essentials";
 
@@ -23,7 +23,7 @@ import {
 	WebviewVisualizationSettings,
 	CBRVWebviewMessage,
 } from "../types";
-import { getExtension, filterFileTree, loopIndex, OptionalKeys } from "../util/util";
+import { getExtension, filterFileTree } from "../util/util";
 import { Point, Box } from "../util/geometry";
 import { ellipsisText, getRect } from "./rendering";
 import { presetColors } from "./colors";
@@ -156,15 +156,15 @@ export default class CBRVWebview {
 				}
 			});
 
-		d3.select(window).on("resize", (e) => this.onResize(e));
+		d3.select(window).on("resize", () => this.onResize());
 
-		[this.width, this.height] = getRect(this.diagram.node()!);
+		[this.width, this.height] = getRect(this.diagram.node());
 
 		tippy.setDefaultProps({
 			plugins: [followCursor],
 		});
 
-		this.diagram.node()!.focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
+		this.diagram.node().focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
 
 		this.update(this.settings, this.codebase);
 	}
@@ -346,7 +346,7 @@ export default class CBRVWebview {
 				},
 				(exit) =>
 					exit
-						.each((d, i, nodes) => (nodes[i] as any)._tippy?.destroy()) // destroy any tippy instances
+						.each((d, i, nodes) => nodes[i]._tippy?.destroy()) // destroy any tippy instances
 						.remove(),
 			);
 
@@ -417,7 +417,7 @@ export default class CBRVWebview {
 			// get d or the first ancestor that is visible
 			const firstVisible = d
 				.ancestors()
-				.find((p) => !p.parent || !this.shouldHideContents(p.parent))!;
+				.find((p) => !p.parent || !this.shouldHideContents(p.parent));
 			newPathMap.set(this.filePath(d), firstVisible);
 		});
 		this.pathMap = newPathMap;
@@ -426,7 +426,7 @@ export default class CBRVWebview {
 	filteredCodebase() {
 		return filterFileTree(
 			this.codebase,
-			(f, path) => !(f.type == FileType.Directory && f.children.length == 0), // filter empty dirs
+			(f) => !(f.type == FileType.Directory && f.children.length == 0), // filter empty dirs
 		);
 	}
 
@@ -505,19 +505,19 @@ export default class CBRVWebview {
 		}
 	}
 
-	onResize(e: Event) {
-		[this.width, this.height] = getRect(this.diagram.node()!);
+	onResize() {
+		[this.width, this.height] = getRect(this.diagram.node());
 		this.throttledUpdate();
 	}
 
 	emit(message: CBRVWebviewMessage) {
-		this.diagram.node()!.dispatchEvent(new CustomEvent(`cbrv:send`, { detail: message }));
+		this.diagram.node().dispatchEvent(new CustomEvent(`cbrv:send`, { detail: message }));
 	}
 
 	emitUpdateSettings(
 		settingsUpdate: DeepPartial<WebviewVisualizationSettings>,
 		rerender = true,
-	) {
+	): void {
 		const newSettings = _.merge({}, this.settings, settingsUpdate);
 		if (rerender) {
 			this.update(newSettings);
@@ -541,7 +541,7 @@ export default class CBRVWebview {
 	}
 
 	/** Jump the view to a file, and make it flash */
-	emphasizeFile(node: Node) {
+	emphasizeFile(node: Node): void {
 		// Zoom to center and fit
 		const zoom = d3.zoom<SVGSVGElement, unknown>();
 		zoom.translateTo(this.diagram, node.x, node.y);

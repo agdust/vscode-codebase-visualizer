@@ -4,7 +4,7 @@ import globals from 'globals';
 
 export default tseslint.config(
 	eslint.configs.recommended,
-	...tseslint.configs.recommended,
+	...tseslint.configs.strict,
 	{
 		ignores: ['media/**', 'dist/**', 'out/**', 'node_modules/**', 'test/sample-codebases/'],
 	},

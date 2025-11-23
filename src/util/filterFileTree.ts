@@ -1,0 +1,27 @@
+import { FileType, AnyFile } from "../types";
+
+/**
+ * Filters a tree structure. Can't remove the root node.
+ * Pass a condition predicate, which will be passed the file object, and a string path relative to root.
+ * The condition predicate will be called on each file AFTER its children have been filtered.
+ */
+export function filterFileTree<T extends AnyFile>(
+	root: T,
+	condition: (node: AnyFile, path: string) => boolean,
+	path = "",
+): T {
+	// Can't use path module in webview.
+	const joinPath = (path: string, c: AnyFile) => (path ? `${path}/${c.name}` : c.name);
+
+	if (root.type == FileType.Directory) {
+		return {
+			...root,
+			children: root.children
+				// map first so condition is run on already filtered directories
+				.map((child) => filterFileTree(child, condition, joinPath(path, child)))
+				.filter((child) => condition(child, joinPath(path, child))),
+		};
+	} else {
+		return root;
+	}
+}

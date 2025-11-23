@@ -1,22 +1,24 @@
 import { describe, it, expect } from "vitest";
-import _ from "lodash";
 
 import { AnyFile, FileType } from "../src/types";
-import * as util from "../src/util/util";
+import { getExtension } from "../src/util/getExtension";
+import { filterFileTree } from "../src/util/filterFileTree";
+import { normalizedJSONStringify } from "../src/util/normalizedJSONStringify";
+import { loopIndex } from "../src/util/loopIndex";
 
 describe("Test utils.ts", () => {
 	it("test getExtension", () => {
-		expect(util.getExtension("a.txt")).toEqual("txt");
-		expect(util.getExtension("path/to/a.txt.zip")).toEqual("zip");
+		expect(getExtension("a.txt")).toEqual("txt");
+		expect(getExtension("path/to/a.txt.zip")).toEqual("zip");
 
-		expect(util.getExtension("a/path/to/file")).toEqual("");
-		expect(util.getExtension("a/path/folder.txt/file")).toEqual("");
+		expect(getExtension("a/path/to/file")).toEqual("");
+		expect(getExtension("a/path/folder.txt/file")).toEqual("");
 
-		expect(util.getExtension("")).toEqual("");
-		expect(util.getExtension(".gitignore")).toEqual("");
-		expect(util.getExtension(".")).toEqual("");
-		expect(util.getExtension("..")).toEqual("");
-		expect(util.getExtension("a.")).toEqual("");
+		expect(getExtension("")).toEqual("");
+		expect(getExtension(".gitignore")).toEqual("");
+		expect(getExtension(".")).toEqual("");
+		expect(getExtension("..")).toEqual("");
+		expect(getExtension("a.")).toEqual("");
 	});
 
 	describe("test filterFileTree", () => {
@@ -40,8 +42,8 @@ describe("Test utils.ts", () => {
 		const file: AnyFile = { name: "empty", type: FileType.File, size: 4 };
 
 		it("basic", () => {
-			expect(util.filterFileTree(tree, () => true)).toEqual(tree);
-			expect(util.filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).toEqual({
+			expect(filterFileTree(tree, () => true)).toEqual(tree);
+			expect(filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).toEqual({
 				name: "a",
 				type: FileType.Directory,
 				children: [
@@ -55,28 +57,28 @@ describe("Test utils.ts", () => {
 		});
 
 		it("can't remove root node", () => {
-			expect(util.filterFileTree(tree, () => false)).toEqual({
+			expect(filterFileTree(tree, () => false)).toEqual({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
 			});
-			expect(util.filterFileTree(empty, () => true)).toEqual(empty);
-			expect(util.filterFileTree(empty, () => false)).toEqual(empty);
-			expect(util.filterFileTree(file, () => true)).toEqual(file);
-			expect(util.filterFileTree(file, () => false)).toEqual(file);
+			expect(filterFileTree(empty, () => true)).toEqual(empty);
+			expect(filterFileTree(empty, () => false)).toEqual(empty);
+			expect(filterFileTree(file, () => true)).toEqual(file);
+			expect(filterFileTree(file, () => false)).toEqual(file);
 		});
 
 		it("paths", () => {
 			let paths: string[] = [];
-			util.filterFileTree(tree, (f, path) => {
+			filterFileTree(tree, (_, path) => {
 				paths.push(path);
 				return true;
 			});
-			paths = _.sortBy(paths);
+			paths = paths.concat().sort();
 
 			expect(paths).toEqual(["b", "b/c", "b/d", "e", "f"]);
 
-			expect(util.filterFileTree(tree, () => false)).toEqual({
+			expect(filterFileTree(tree, () => false)).toEqual({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
@@ -108,7 +110,7 @@ describe("Test utils.ts", () => {
 			};
 
 			expect(
-				util.filterFileTree(
+				filterFileTree(
 					tree,
 					(f) => f.type != FileType.Directory || f.children.length > 0,
 				),
@@ -128,15 +130,15 @@ describe("Test utils.ts", () => {
 	});
 
 	it("test normalizedJSONStringify", () => {
-		expect(util.normalizedJSONStringify(1)).toEqual("1");
-		expect(util.normalizedJSONStringify("a")).toEqual('"a"');
-		expect(util.normalizedJSONStringify(null)).toEqual("null");
-		expect(util.normalizedJSONStringify([1, 2, 3])).toEqual("[1,2,3]");
-		expect(util.normalizedJSONStringify({ a: 2, b: 1 })).toEqual('{"a":2,"b":1}');
-		expect(util.normalizedJSONStringify({ b: 1, a: 2 })).toEqual('{"a":2,"b":1}');
-		expect(util.normalizedJSONStringify({})).toEqual("{}");
+		expect(normalizedJSONStringify(1)).toEqual("1");
+		expect(normalizedJSONStringify("a")).toEqual('"a"');
+		expect(normalizedJSONStringify(null)).toEqual("null");
+		expect(normalizedJSONStringify([1, 2, 3])).toEqual("[1,2,3]");
+		expect(normalizedJSONStringify({ a: 2, b: 1 })).toEqual('{"a":2,"b":1}');
+		expect(normalizedJSONStringify({ b: 1, a: 2 })).toEqual('{"a":2,"b":1}');
+		expect(normalizedJSONStringify({})).toEqual("{}");
 		expect(
-			util.normalizedJSONStringify({
+			normalizedJSONStringify({
 				b: 1,
 				a: { d: [1, 2, 3], c: null },
 			}),
@@ -144,21 +146,21 @@ describe("Test utils.ts", () => {
 	});
 
 	it("test loopIndex", () => {
-		expect(util.loopIndex(3, 5)).toEqual(3);
-		expect(util.loopIndex(0, 5)).toEqual(0);
-		expect(util.loopIndex(5, 5)).toEqual(0);
-		expect(util.loopIndex(6, 5)).toEqual(1);
-		expect(util.loopIndex(12, 5)).toEqual(2);
-		expect(util.loopIndex(-1, 5)).toEqual(4);
-		expect(util.loopIndex(-2, 5)).toEqual(3);
-		expect(util.loopIndex(-5, 5)).toEqual(0);
-		expect(util.loopIndex(-7, 5)).toEqual(3);
-		expect(util.loopIndex(-12, 5)).toEqual(3);
+		expect(loopIndex(3, 5)).toEqual(3);
+		expect(loopIndex(0, 5)).toEqual(0);
+		expect(loopIndex(5, 5)).toEqual(0);
+		expect(loopIndex(6, 5)).toEqual(1);
+		expect(loopIndex(12, 5)).toEqual(2);
+		expect(loopIndex(-1, 5)).toEqual(4);
+		expect(loopIndex(-2, 5)).toEqual(3);
+		expect(loopIndex(-5, 5)).toEqual(0);
+		expect(loopIndex(-7, 5)).toEqual(3);
+		expect(loopIndex(-12, 5)).toEqual(3);
 
-		expect(util.loopIndex(0, 1)).toEqual(0);
-		expect(util.loopIndex(1, 1)).toEqual(0);
-		expect(util.loopIndex(-1, 1)).toEqual(0);
+		expect(loopIndex(0, 1)).toEqual(0);
+		expect(loopIndex(1, 1)).toEqual(0);
+		expect(loopIndex(-1, 1)).toEqual(0);
 
-		expect(util.loopIndex(0, 0)).toEqual(NaN);
+		expect(loopIndex(0, 0)).toEqual(NaN);
 	});
 });

@@ -21,10 +21,22 @@ export default tseslint.config(
 		},
 		rules: {
 			semi: ['error', 'always'],
-			'@typescript-eslint/no-unused-vars': 'error',
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					"args": "all",
+					"argsIgnorePattern": "^_",
+					"caughtErrors": "all",
+					"caughtErrorsIgnorePattern": "^_",
+					"destructuredArrayIgnorePattern": "^_",
+					"varsIgnorePattern": "^_",
+					"ignoreRestSiblings": true
+				}
+			],
 			'@typescript-eslint/no-explicit-any': 'error',
 			'@typescript-eslint/explicit-module-boundary-types': 'warn',
 			'@typescript-eslint/no-non-null-assertion': 'error',
+			'arrow-body-style': ["error", 'as-needed']
 		},
 	}
 );

@@ -1,6 +1,3 @@
-/** Contains interfaces and classes internal to CBRV that are can be used both inside and outside the webview */
-import { DeepPartial } from "ts-essentials";
-
 /**
  * Just an alias for VSCode's FileType enum.
  * I've redeclared it from scratch here so that it can be used inside the webview (vscode isn't available there)
@@ -79,5 +76,5 @@ export type ContextMenuActionMessage = {
 };
 export type UpdateSettings = {
 	type: "update-settings";
-	settings: DeepPartial<WebviewVisualizationSettings>;
+	settings: Partial<WebviewVisualizationSettings>;
 };

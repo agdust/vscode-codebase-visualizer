@@ -1,11 +1,11 @@
 import { describe, test, expect } from "vitest";
 import * as vscode from "vscode";
 import { Uri } from "vscode";
-import _ from "lodash";
 import * as path from "path";
 
 import { AnyFile, Directory, FileType } from "../../src/types";
 import * as fileHelper from "../../src/util/fileHelper";
+import { deepEqual } from "../../src/util/deepEqual";
 import { writeFileTree } from "./integrationHelpers";
 
 // I can't find a built-in way to get workspaceFolder. __dirname is .../CBRV/dist/test/test/integration
@@ -131,26 +131,28 @@ function expectTree(actual: AnyFile, expected: AnyFile) {
 				...file,
 				children: file.children.map((c) => stripFields(c)),
 			};
-		} else if (file.type == FileType.File) {
-			return _.omit(file, "size");
-		} else {
-			return _.omit(file, ["link", "resolved"]);
 		}
+		if (file.type == FileType.File) {
+			const { size: _, ...result } = file;
+			return result;
+		}
+		const { link: _, resolved: __, ...result } = file;
+		return result;
 	};
 	// do a normal expect so we get nice error messages for simple errors
 	expect(stripFields(actual)).toEqual(stripFields(expected));
 
 	// check that sizes are close to what we expected and symlinks paths match
-	const areEqual = _.isEqualWith(actual, expected, (a, b, key) => {
+	const areEqual = deepEqual(actual, expected, (a, b, key) => {
 		if (key == "size") {
-			return Math.abs(b - a) < b * 0.1;
+			return Math.abs((b as number) - (a as number)) < (b as number) * 0.1;
 		} else if (key == "link") {
 			return (
-				a.split(path.sep).join("/").toLocaleLowerCase() ==
-				b.split(path.sep).join("/").toLocaleLowerCase()
+				(a as string).split(path.sep).join("/").toLocaleLowerCase() ==
+				(b as string).split(path.sep).join("/").toLocaleLowerCase()
 			);
 		} else if (key == "resolved") {
-			return a.toLocaleLowerCase() == b.toLocaleLowerCase();
+			return (a as string).toLocaleLowerCase() == (b as string).toLocaleLowerCase();
 		} else {
 			return undefined;
 		}

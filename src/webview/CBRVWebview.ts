@@ -1,5 +1,4 @@
 import * as d3 from "d3";
-import _ from "lodash";
 
 // d3-context-menu lacks types, so just manually requiring. This is working, but should consider better options:
 // - VSCode built-in menu configuration
@@ -14,7 +13,6 @@ import "d3-context-menu/css/d3-context-menu.css"; // manually require the CSS
 
 import tippy, { followCursor, Instance } from "tippy.js";
 import "tippy.js/dist/tippy.css"; // optional for styling
-import { DeepPartial } from "ts-essentials";
 
 import {
 	AnyFile,
@@ -23,7 +21,9 @@ import {
 	WebviewVisualizationSettings,
 	CBRVWebviewMessage,
 } from "../types";
-import { getExtension, filterFileTree } from "../util/util";
+import { getExtension } from "../util/getExtension";
+import { filterFileTree } from "../util/filterFileTree";
+import { throttle } from "../util/throttle";
 import { Point, Box } from "../util/geometry";
 import { ellipsisText, getRect } from "./rendering";
 import { presetColors } from "./colors";
@@ -130,7 +130,7 @@ export default class CBRVWebview {
         `);
 
 		// Add event listeners
-		this.throttledUpdate = _.throttle(() => this.update(), 150, { trailing: true });
+		this.throttledUpdate = throttle(() => this.update(), 150, { trailing: true });
 
 		const [x, y, width, height] = this.getViewbox();
 		const extent: [Point, Point] = [
@@ -206,7 +206,7 @@ export default class CBRVWebview {
 		root.sum((d) => {
 			// Compute size of files and folders.
 			if (d.type == FileType.File) {
-				return _.clamp(d.size, this.s.file.minSize, this.s.file.maxSize);
+				return Math.min(this.s.file.maxSize, Math.max(d.size, this.s.file.minSize));
 			} else if (d.type == FileType.Directory) {
 				// only give empty folders a size. Empty folders are normally
 				return d.children.length == 0 ? 1 : 0; // filtered, but root can be empty.
@@ -445,16 +445,18 @@ export default class CBRVWebview {
 
 	/** Returns a function used to compute color from file extension */
 	getColorScale(nodes: Node): (d: AnyFile) => string | null {
-		const domain = _(nodes.descendants()) // lodash is lazy
-			.filter((n) => n.data.type != FileType.Directory)
-			.map((n) =>
-				getExtension(
-					n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name,
-				),
-			)
-			.uniq()
-			.filter((ext) => !presetColors[ext])
-			.value();
+		const domain = Array.from(
+			new Set(
+				nodes
+					.descendants()
+					.filter((n) => n.data.type != FileType.Directory)
+					.map((n) =>
+						getExtension(
+							n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name,
+						),
+					),
+			),
+		).filter((ext) => !presetColors[ext]);
 		// interpolateRainbow loops around so the first and last entries are the same, so +1 and slice off end to make
 		// all colors unique. Also, quantize requires n > 1, so the +1 also fixes that.
 		const range = d3.quantize(d3.interpolateRainbow, domain.length + 1).slice(0, -1);
@@ -528,10 +530,10 @@ export default class CBRVWebview {
 	}
 
 	emitUpdateSettings(
-		settingsUpdate: DeepPartial<WebviewVisualizationSettings>,
+		settingsUpdate: Partial<WebviewVisualizationSettings>,
 		rerender = true,
 	): void {
-		const newSettings = _.merge({}, this.settings, settingsUpdate);
+		const newSettings = Object.assign({}, this.settings, settingsUpdate);
 		if (rerender) {
 			this.update(newSettings);
 		} else {

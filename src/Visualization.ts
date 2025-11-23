@@ -2,7 +2,6 @@ import * as vscode from "vscode";
 import { Uri, Webview, WebviewPanel, FileSystemWatcher, workspace } from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { isEqual, cloneDeep } from "lodash";
 
 import {
 	WebviewVisualizationSettings,
@@ -13,6 +12,7 @@ import {
 import * as fileHelper from "./util/fileHelper";
 import { defaultSettings } from "./defaultSettings";
 import { VisualizationSettings } from "./VisualizationSettings";
+import { shallowCompare } from "./util/shallowCompare";
 
 /**
  * A mutable "view" on a Visualization that can be used to update it.
@@ -130,7 +130,7 @@ export class Visualization {
 
 		constructor(visualization: Visualization) {
 			this.visualization = visualization;
-			this.settings = cloneDeep(this.visualization.originalSettings);
+			this.settings = structuredClone(this.visualization.originalSettings);
 		}
 
 		/** The root of the codebase we are visualizing */
@@ -154,7 +154,7 @@ export class Visualization {
 
 		const send = { settings: false };
 
-		if (!isEqual(this.originalSettings, state.settings)) {
+		if (!shallowCompare(this.originalSettings, state.settings)) {
 			this.originalSettings = state.settings;
 			this.settings = this.normalizeSettings(state.settings);
 			if (this.webviewPanel) {

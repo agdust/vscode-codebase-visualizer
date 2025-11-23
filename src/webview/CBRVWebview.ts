@@ -34,6 +34,39 @@ type Selection<
 	Datum = unknown,
 > = d3.Selection<GElement, Datum, d3.BaseType, undefined>;
 
+const presetColors: Record<string, string> = {
+	js: "#f1e05a",
+	ts: "#3178c6",
+	jsx: "#f1e05a",
+	tsx: "#3178c6",
+	py: "#3572A5",
+	java: "#b07219",
+	c: "#555555",
+	cpp: "#f34b7d",
+	cs: "#178600",
+	go: "#00ADD8",
+	rs: "#dea584",
+	php: "#4F5D95",
+	rb: "#701516",
+	swift: "#F05138",
+	kt: "#A97BFF",
+	dart: "#00B4AB",
+	lua: "#000080",
+	r: "#198CE7",
+	sh: "#89e051",
+	md: "#083fa1",
+	json: "#cbcb41",
+	xml: "#0060ac",
+	yaml: "#cb171e",
+	yml: "#cb171e",
+	sql: "#e38c00",
+	css: "#563d7c",
+	html: "#e34c26",
+	vue: "#41b883",
+	txt: "#aeb1b5",
+	gitignore: "#f44d27",
+};
+
 /**
  * This is the class that renders the actual diagram.
  */
@@ -451,6 +484,7 @@ export default class CBRVWebview {
 				),
 			)
 			.uniq()
+			.filter((ext) => !presetColors[ext])
 			.value();
 		// interpolateRainbow loops around so the first and last entries are the same, so +1 and slice off end to make
 		// all colors unique. Also, quantize requires n > 1, so the +1 also fixes that.
@@ -460,11 +494,13 @@ export default class CBRVWebview {
 		return (d: AnyFile) => {
 			if (d.type == FileType.Directory) {
 				return null;
-			} else if (d.type == FileType.SymbolicLink) {
-				return colorScale(getExtension(d.resolved));
-			} else {
-				return colorScale(getExtension(d.name));
 			}
+
+			const ext = getExtension(d.type == FileType.SymbolicLink ? d.resolved : d.name);
+			if (presetColors[ext]) {
+				return presetColors[ext];
+			}
+			return colorScale(ext);
 		};
 	}
 

@@ -79,7 +79,7 @@ export class Visualization {
 	private originalSettings: VisualizationSettings;
 	private settings: DeepRequired<VisualizationSettings>;
 
-	private webviewPanel?: WebviewPanel;
+	private webviewPanel: WebviewPanel;
 	private fsWatcher?: FileSystemWatcher;
 
 	private files: Uri[] = [];
@@ -96,6 +96,67 @@ export class Visualization {
 		this.originalSettings = settings;
 		this.settings = this.normalizeSettings(settings);
 		this.codebase = codebase;
+		this.webviewPanel = this.createWebviewPanel();
+
+		this.init();
+	}
+
+	private async init() {
+		// Await until we get the ready message from the webview
+		await new Promise((resolve, reject) => {
+			const disposable = this.webviewPanel.webview.onDidReceiveMessage(
+				async (message: CBRVWebviewMessage) => {
+					if (message.type == "ready") {
+						disposable.dispose();
+						resolve(undefined);
+					} else {
+						reject(new Error('First message should be "ready"'));
+					}
+				},
+			);
+		});
+
+		await this.updateFileList();
+		await this.sendSet({ codebase: true, settings: true });
+		this.setupWatcher();
+
+		this.webviewPanel.webview.onDidReceiveMessage(
+			async (message: CBRVWebviewMessage) => {
+				if (message.type == "ready") {
+					// we can get ready again if the webview closes and reopens.
+					await this.sendSet({ codebase: true, settings: true });
+				} else if (message.type == "open") {
+					// NOTE: we could do these and Command URIs inside the webview instead. That might be simpler
+					await vscode.commands.executeCommand("vscode.open", this.getUri(message.file));
+				} else if (message.type == "reveal") {
+					await vscode.commands.executeCommand(
+						"revealInExplorer",
+						this.getUri(message.file),
+					);
+				} else if (message.type == "update-settings") {
+					this.settings = _.merge({}, this.settings, message.settings);
+					const filters = message.settings.filters;
+					if (filters?.include != undefined || filters?.exclude != undefined) {
+						await this.updateFileList();
+						await this.sendSet({ codebase: true });
+						if (this.onFilesChangeCallback) {
+							this.update(this.onFilesChangeCallback);
+						}
+					}
+				} else if (message.type == "context-menu") {
+					const [menu, i] = message.action.split("-");
+					const uri = this.getUri(message.file);
+					const menuType = menu as "file" | "directory";
+					const index = Number(i);
+					const menuItem = this.settings.contextMenu[menuType]?.[index];
+					if (menuItem) {
+						menuItem.action(uri, this);
+					}
+				}
+			},
+			undefined,
+			this.context.subscriptions,
+		);
 	}
 
 	/** A mutable "view" on a Visualization */
@@ -164,84 +225,17 @@ export class Visualization {
 	 * These properties and methods are just passed through to the internal webview panel.
 	 * See https://code.visualstudio.com/api/references/vscode-api#WebviewPanel
 	 */
-	get active() {
-		return this.webviewPanel!.active;
+	get active(): boolean {
+		return this.webviewPanel.active;
 	}
-	get viewColumn() {
-		return this.webviewPanel!.viewColumn;
+	get viewColumn(): vscode.ViewColumn | undefined {
+		return this.webviewPanel.viewColumn;
 	}
-	get visible() {
-		return this.webviewPanel!.visible;
+	get visible(): boolean {
+		return this.webviewPanel.visible;
 	}
 	reveal(viewColumn?: vscode.ViewColumn, preserveFocus?: boolean): void {
-		this.webviewPanel!.reveal(viewColumn, preserveFocus);
-	}
-
-	/**
-	 * Open up the visualizing in the webview.
-	 * You shouldn't call this directly, `API.create` launches automatically.
-	 */
-	async launch() {
-		if (this.webviewPanel) {
-			throw new Error("Visualization launched twice");
-		}
-		this.webviewPanel = this.createWebviewPanel();
-
-		// Await until we get the ready message from the webview
-		await new Promise((resolve, reject) => {
-			const disposable = this.webviewPanel!.webview.onDidReceiveMessage(
-				async (message: CBRVWebviewMessage) => {
-					if (message.type == "ready") {
-						disposable.dispose();
-						resolve(undefined);
-					} else {
-						reject(new Error('First message should be "ready"'));
-					}
-				},
-			);
-		});
-
-		await this.updateFileList();
-		await this.sendSet({ codebase: true, settings: true });
-		this.setupWatcher();
-
-		this.webviewPanel.webview.onDidReceiveMessage(
-			async (message: CBRVWebviewMessage) => {
-				if (message.type == "ready") {
-					// we can get ready again if the webview closes and reopens.
-					await this.sendSet({ codebase: true, settings: true });
-				} else if (message.type == "open") {
-					// NOTE: we could do these and Command URIs inside the webview instead. That might be simpler
-					await vscode.commands.executeCommand("vscode.open", this.getUri(message.file));
-				} else if (message.type == "reveal") {
-					await vscode.commands.executeCommand(
-						"revealInExplorer",
-						this.getUri(message.file),
-					);
-				} else if (message.type == "update-settings") {
-					this.settings = _.merge({}, this.settings, message.settings);
-					const filters = message.settings.filters;
-					if (filters?.include != undefined || filters?.exclude != undefined) {
-						await this.updateFileList();
-						await this.sendSet({ codebase: true });
-						if (this.onFilesChangeCallback) {
-							this.update(this.onFilesChangeCallback);
-						}
-					}
-				} else if (message.type == "context-menu") {
-					const [menu, i] = message.action.split("-");
-					const uri = this.getUri(message.file);
-					const menuType = menu as "file" | "directory";
-					const index = Number(i);
-					const menuItem = this.settings.contextMenu[menuType]?.[index];
-					if (menuItem) {
-						menuItem.action(uri, this);
-					}
-				}
-			},
-			undefined,
-			this.context.subscriptions,
-		);
+		this.webviewPanel.reveal(viewColumn, preserveFocus);
 	}
 
 	/** Destroy the visualization and all webviews/watchers etc. */
@@ -387,7 +381,7 @@ export class Visualization {
 	}
 
 	private async send(message: CBRVMessage) {
-		await this.webviewPanel!.webview.postMessage(message);
+		await this.webviewPanel.webview.postMessage(message);
 	}
 
 	private getUri(file: string): Uri {

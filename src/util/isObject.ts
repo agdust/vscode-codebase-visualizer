@@ -1,5 +1,5 @@
 export function isObject(obj: unknown): obj is Record<string, unknown> {
-	if (typeof obj !== "object") return false;
+	if (typeof obj !== "object" || obj === null) return false;
 
 	if (Array.isArray(obj)) return false;
 

@@ -43,7 +43,6 @@ export class API {
 			throw new Error("No workspace to visualize");
 		}
 		const vis = new Visualization(this.context, codebase, settings);
-		await vis.launch();
 		return vis;
 	}
 }

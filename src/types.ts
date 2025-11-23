@@ -45,14 +45,10 @@ export interface SymbolicLink extends BaseFile {
 }
 
 export interface WebviewVisualizationSettings {
-	filters: {
-		include: string;
-		exclude: string;
-	};
-	contextMenu: {
-		file: WebviewContextMenuItem[];
-		directory: WebviewContextMenuItem[];
-	};
+	include: string;
+	exclude: string;
+	contextMenuFile: WebviewContextMenuItem[];
+	contextMenuDirectory: WebviewContextMenuItem[];
 }
 
 export type WebviewContextMenuItem = { title: string; action: string };

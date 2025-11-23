@@ -42,10 +42,8 @@ function main() {
 				: checkboxExclude;
 
 			view.emitUpdateSettings({
-				filters: {
-					include: includeInput.value.trim(),
-					exclude: combinedExclude,
-				},
+				include: includeInput.value.trim(),
+				exclude: combinedExclude,
 			});
 		}
 	};
@@ -57,8 +55,8 @@ function main() {
 
 		if (message.type == "set") {
 			if (message.settings) {
-				includeInput.value = message.settings.filters.include;
-				excludeInput.value = message.settings.filters.exclude;
+				includeInput.value = message.settings.include;
+				excludeInput.value = message.settings.exclude;
 			}
 
 			if (message.codebase) {

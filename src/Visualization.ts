@@ -2,8 +2,7 @@ import * as vscode from "vscode";
 import { Uri, Webview, WebviewPanel, FileSystemWatcher, workspace } from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import { DeepRequired } from "ts-essentials";
-import _, { isEqual, cloneDeep } from "lodash";
+import { isEqual, cloneDeep } from "lodash";
 
 import {
 	WebviewVisualizationSettings,
@@ -13,6 +12,7 @@ import {
 } from "./types";
 import * as fileHelper from "./util/fileHelper";
 import { defaultSettings } from "./defaultSettings";
+import { VisualizationSettings } from "./VisualizationSettings";
 
 /**
  * A mutable "view" on a Visualization that can be used to update it.
@@ -22,53 +22,6 @@ import { defaultSettings } from "./defaultSettings";
 export type VisualizationState = InstanceType<typeof Visualization.VisualizationState>;
 
 /**
- * Settings and configuration for a Visualization.
- */
-export interface VisualizationSettings {
-	/**
-	 * Icon for the webview panel. See https://code.visualstudio.com/api/references/vscode-api#WebviewPanel
-	 */
-	iconPath?: Uri | { dark: Uri; light: Uri } | null;
-
-	/**
-	 * Title for the internal webview. See https://code.visualstudio.com/api/references/vscode-api#WebviewPanel
-	 */
-	title?: string;
-
-	/**
-	 * The default filters on what files will show in the visualization.
-	 * The user can still modify these defaults in the visualization.
-	 */
-	filters?: {
-		/**
-		 * Exclude files that match these comma separated glob patterns.
-		 * Can be overridden by the user via the controls.
-		 */
-		exclude?: string;
-
-		/**
-		 * Include only files that match these comma separated glob patterns.
-		 * Can be overridden by the user via the controls.
-		 */
-		include?: string;
-	};
-
-	/**
-	 * Context menu options that will show for files and folders in addition to the default ones. Each `ContextMenuItem`
-	 * contains a title and a callback that will be called with the Uri of the selected file or folder.
-	 */
-	contextMenu?: {
-		file?: ContextMenuItem[];
-		directory?: ContextMenuItem[];
-	};
-}
-
-export type ContextMenuItem = {
-	title: string;
-	action: (uri: Uri, vis: Visualization) => void;
-};
-
-/**
  * Creates, launches, and allows updating a CBRV visualization.
  */
 export class Visualization {
@@ -76,8 +29,8 @@ export class Visualization {
 	public readonly codebase: Uri;
 
 	private context: vscode.ExtensionContext;
-	private originalSettings: VisualizationSettings;
-	private settings: DeepRequired<VisualizationSettings>;
+	private originalSettings: Partial<VisualizationSettings>;
+	private settings: VisualizationSettings;
 
 	private webviewPanel: WebviewPanel;
 	private fsWatcher?: FileSystemWatcher;
@@ -90,7 +43,7 @@ export class Visualization {
 	constructor(
 		context: vscode.ExtensionContext,
 		codebase: Uri,
-		settings: VisualizationSettings = {},
+		settings: Partial<VisualizationSettings> = {},
 	) {
 		this.context = context;
 		this.originalSettings = settings;
@@ -134,9 +87,17 @@ export class Visualization {
 						this.getUri(message.file),
 					);
 				} else if (message.type == "update-settings") {
-					this.settings = _.merge({}, this.settings, message.settings);
-					const filters = message.settings.filters;
-					if (filters?.include != undefined || filters?.exclude != undefined) {
+					if (message.settings.include !== undefined) {
+						this.settings.include = message.settings.include;
+					}
+					if (message.settings.exclude !== undefined) {
+						this.settings.exclude = message.settings.exclude;
+					}
+
+					if (
+						message.settings.include != undefined ||
+						message.settings.exclude != undefined
+					) {
 						await this.updateFileList();
 						await this.sendSet({ codebase: true });
 						if (this.onFilesChangeCallback) {
@@ -146,9 +107,11 @@ export class Visualization {
 				} else if (message.type == "context-menu") {
 					const [menu, i] = message.action.split("-");
 					const uri = this.getUri(message.file);
-					const menuType = menu as "file" | "directory";
 					const index = Number(i);
-					const menuItem = this.settings.contextMenu[menuType]?.[index];
+					const menuItem =
+						menu === "file"
+							? this.settings.contextMenuFile[index]
+							: this.settings.contextMenuDirectory[index];
 					if (menuItem) {
 						menuItem.action(uri, this);
 					}
@@ -163,7 +126,7 @@ export class Visualization {
 	static VisualizationState = class {
 		private visualization: Visualization;
 
-		settings: VisualizationSettings;
+		settings: Partial<VisualizationSettings>;
 
 		constructor(visualization: Visualization) {
 			this.visualization = visualization;
@@ -249,7 +212,7 @@ export class Visualization {
 	 * Updates the Visualization after the codebase or include/exclude settings have changed.
 	 */
 	private async updateFileList(): Promise<void> {
-		const { include, exclude } = this.settings.filters;
+		const { include, exclude } = this.settings;
 		this.files = await fileHelper.getFilteredFileList(
 			this.codebase,
 			include || "**/*",
@@ -259,40 +222,42 @@ export class Visualization {
 
 	/** Returns a complete settings object with defaults filled in an normalized a bit.  */
 	private normalizeSettings(
-		settings: VisualizationSettings,
-	): DeepRequired<VisualizationSettings> {
-		settings = cloneDeep(settings);
+		settings: Partial<VisualizationSettings>,
+	): VisualizationSettings {
+		const newSettings = { ...defaultSettings, ...settings };
+
 		// prepend defaults to menu items (if they are specified)
-		if (settings.contextMenu?.file)
-			settings.contextMenu.file.splice(0, 0, ...defaultSettings.contextMenu.file);
-		if (settings.contextMenu?.directory)
-			settings.contextMenu.directory.splice(
-				0,
-				0,
-				...defaultSettings.contextMenu.directory,
-			);
+		if (settings.contextMenuFile) {
+			newSettings.contextMenuFile = [
+				...defaultSettings.contextMenuFile,
+				...settings.contextMenuFile,
+			];
+		}
+		if (settings.contextMenuDirectory) {
+			newSettings.contextMenuDirectory = [
+				...defaultSettings.contextMenuDirectory,
+				...settings.contextMenuDirectory,
+			];
+		}
 
-		settings = _.merge({}, defaultSettings, settings);
-
-		return settings as DeepRequired<VisualizationSettings>;
+		return newSettings;
 	}
 
 	/** Returns a complete settings object with defaults filled in an normalized a bit.  */
 	private getWebviewSettings(): WebviewVisualizationSettings {
-		const webviewSettings = {
-			..._.omit(this.settings, ["iconPath", "title", "contextMenu"]),
-			contextMenu: {
-				file: this.settings.contextMenu.file.map((item, i) => ({
-					...item,
-					action: `file-${i}`,
-				})),
-				directory: this.settings.contextMenu.directory.map((item, i) => ({
-					...item,
-					action: `directory-${i}`,
-				})),
-			},
+		const webviewSettings: WebviewVisualizationSettings = {
+			include: this.settings.include,
+			exclude: this.settings.exclude,
+			contextMenuFile: this.settings.contextMenuFile.map((item, i) => ({
+				title: item.title,
+				action: `file-${i}`,
+			})),
+			contextMenuDirectory: this.settings.contextMenuDirectory.map((item, i) => ({
+				title: item.title,
+				action: `directory-${i}`,
+			})),
 		};
-		return webviewSettings as WebviewVisualizationSettings;
+		return webviewSettings;
 	}
 
 	private setupWatcher() {

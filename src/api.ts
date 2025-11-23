@@ -4,12 +4,11 @@
 
 import * as vscode from "vscode";
 
+import { Visualization, type VisualizationState } from "./Visualization";
 import {
-	Visualization,
 	type VisualizationSettings,
 	type ContextMenuItem,
-	type VisualizationState,
-} from "./Visualization";
+} from "./VisualizationSettings";
 
 /**
  * This is the API that the CBRV VSCode extension will expose.
@@ -37,7 +36,7 @@ export class API {
 	 * @param settings Settings for the visualization
 	 * @returns The {@link Visualization} object which can be used to update the visualization.
 	 */
-	async create(settings: VisualizationSettings): Promise<Visualization> {
+	async create(settings: Partial<VisualizationSettings>): Promise<Visualization> {
 		const codebase = vscode.workspace.workspaceFolders?.[0]?.uri;
 		if (!codebase) {
 			throw new Error("No workspace to visualize");

@@ -542,7 +542,11 @@ export default class CBRVWebview {
 
 	contextMenu(d: Node): { title: string; action: (d: Node) => void }[] {
 		const fileType = this.resolvedType(d) == FileType.Directory ? "directory" : "file";
-		return this.settings.contextMenu[fileType].map((item, i) => ({
+		const items =
+			fileType === "directory"
+				? this.settings.contextMenuDirectory
+				: this.settings.contextMenuFile;
+		return items.map((item, i) => ({
 			title: item.title,
 			action: (d: Node) =>
 				this.emit({

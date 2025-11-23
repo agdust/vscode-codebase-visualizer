@@ -18,7 +18,7 @@ export function getExtension(filename: string): string {
 export function filterFileTree<T extends AnyFile>(
 	root: T,
 	condition: (node: AnyFile, path: string) => boolean,
-	path = ""
+	path = "",
 ): T {
 	// Can't use path module in webview.
 	const joinPath = (path: string, c: AnyFile) => (path ? `${path}/${c.name}` : c.name);

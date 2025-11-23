@@ -7,7 +7,7 @@ export function ellipsisText(
 	el: SVGTextContentElement,
 	width: number,
 	height = Infinity,
-	padding = 0
+	padding = 0,
 ): string {
 	const [availableWidth, availableHeight] = [width - 2 * padding, height - 2 * padding];
 	const fontHeight = parseInt(getComputedStyle(el).fontSize, 10);

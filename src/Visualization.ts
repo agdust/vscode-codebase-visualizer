@@ -110,7 +110,7 @@ export class Visualization {
 					title: "Copy Relative Path",
 					action: (uri, vis) =>
 						vscode.env.clipboard.writeText(
-							path.relative(vis.codebase.fsPath, uri.fsPath)
+							path.relative(vis.codebase.fsPath, uri.fsPath),
 						),
 				},
 			],
@@ -128,7 +128,7 @@ export class Visualization {
 					title: "Copy Relative Path",
 					action: (uri, vis) =>
 						vscode.env.clipboard.writeText(
-							path.relative(vis.codebase.fsPath, uri.fsPath)
+							path.relative(vis.codebase.fsPath, uri.fsPath),
 						),
 				},
 			],
@@ -139,7 +139,7 @@ export class Visualization {
 	constructor(
 		context: vscode.ExtensionContext,
 		codebase: Uri,
-		settings: VisualizationSettings = {}
+		settings: VisualizationSettings = {},
 	) {
 		this.context = context;
 		this.originalSettings = settings;
@@ -201,7 +201,7 @@ export class Visualization {
 	 */
 	onFilesChange(
 		func: (visState: VisualizationState) => Promise<void>,
-		options?: { immediate?: boolean }
+		options?: { immediate?: boolean },
 	): void {
 		this.onFilesChangeCallback = func;
 		if (options?.immediate ?? false) {
@@ -246,7 +246,7 @@ export class Visualization {
 					} else {
 						reject(new Error('First message should be "ready"'));
 					}
-				}
+				},
 			);
 		});
 
@@ -265,7 +265,7 @@ export class Visualization {
 				} else if (message.type == "reveal") {
 					await vscode.commands.executeCommand(
 						"revealInExplorer",
-						this.getUri(message.file)
+						this.getUri(message.file),
 					);
 				} else if (message.type == "update-settings") {
 					this.settings = _.merge({}, this.settings, message.settings);
@@ -282,12 +282,12 @@ export class Visualization {
 					const uri = this.getUri(message.file);
 					this.settings.contextMenu[menu as "file" | "directory"][Number(i)].action(
 						uri,
-						this
+						this,
 					);
 				}
 			},
 			undefined,
-			this.context.subscriptions
+			this.context.subscriptions,
 		);
 	}
 
@@ -298,7 +298,6 @@ export class Visualization {
 		this.fsWatcher?.dispose();
 	}
 
-
 	/**
 	 * Updates the Visualization after the codebase or include/exclude settings have changed.
 	 */
@@ -307,13 +306,13 @@ export class Visualization {
 		this.files = await fileHelper.getFilteredFileList(
 			this.codebase,
 			include || "**/*",
-			exclude
+			exclude,
 		);
 	}
 
 	/** Returns a complete settings object with defaults filled in an normalized a bit.  */
 	private normalizeSettings(
-		settings: VisualizationSettings
+		settings: VisualizationSettings,
 	): DeepRequired<VisualizationSettings> {
 		settings = cloneDeep(settings);
 		// prepend defaults to menu items (if they are specified)
@@ -321,13 +320,13 @@ export class Visualization {
 			settings.contextMenu.file.splice(
 				0,
 				0,
-				...Visualization.defaultSettings.contextMenu.file
+				...Visualization.defaultSettings.contextMenu.file,
 			);
 		if (settings.contextMenu?.directory)
 			settings.contextMenu.directory.splice(
 				0,
 				0,
-				...Visualization.defaultSettings.contextMenu.directory
+				...Visualization.defaultSettings.contextMenu.directory,
 			);
 
 		settings = _.merge({}, Visualization.defaultSettings, settings);
@@ -338,11 +337,7 @@ export class Visualization {
 	/** Returns a complete settings object with defaults filled in an normalized a bit.  */
 	private getWebviewSettings(): WebviewVisualizationSettings {
 		const webviewSettings = {
-			..._.omit(this.settings, [
-				"iconPath",
-				"title",
-				"contextMenu",
-			]),
+			..._.omit(this.settings, ["iconPath", "title", "contextMenu"]),
 			contextMenu: {
 				file: this.settings.contextMenu.file.map((item, i) => ({
 					...item,
@@ -363,7 +358,7 @@ export class Visualization {
 			// Watch entire codebase. The workspace is watched by default, so it shouldn't be a performance
 			// issue to add a broad watcher for it since it will just use the default watcher. We'll check
 			// include/exclude the callback.
-			new vscode.RelativePattern(this.codebase, "**/*")
+			new vscode.RelativePattern(this.codebase, "**/*"),
 		);
 
 		const callback = async () => {
@@ -406,7 +401,7 @@ export class Visualization {
 				enableScripts: true,
 				localResourceRoots: [vscode.Uri.file(this.context.extensionPath)],
 				// enableCommandUris: true,
-			}
+			},
 		);
 		panel.iconPath = this.settings.iconPath ?? undefined;
 
@@ -418,7 +413,7 @@ export class Visualization {
 	private getWebviewContent(webview: Webview): string {
 		const extPath = vscode.Uri.file(this.context.extensionPath);
 		const scriptUri = webview.asWebviewUri(
-			Uri.joinPath(extPath, "dist", "webview", "webview.js")
+			Uri.joinPath(extPath, "dist", "webview", "webview.js"),
 		);
 
 		return `
@@ -448,10 +443,7 @@ export class Visualization {
         `;
 	}
 
-	private async sendSet(send: {
-		codebase?: boolean;
-		settings?: boolean;
-	}) {
+	private async sendSet(send: { codebase?: boolean; settings?: boolean }) {
 		let codebase: Directory | undefined;
 		if (send.codebase) {
 			codebase = await fileHelper.listToFileTree(this.codebase, this.files);

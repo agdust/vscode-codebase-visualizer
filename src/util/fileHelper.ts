@@ -11,7 +11,7 @@ async function createAnyFile(
 	type: FileType,
 	uri: Uri,
 	base: Uri,
-	stat?: vscode.FileStat
+	stat?: vscode.FileStat,
 ): Promise<AnyFile> {
 	const name = path.basename(uri.fsPath);
 	if (type == FileType.Directory) {
@@ -50,7 +50,7 @@ async function createAnyFile(
 export async function getFileTree(
 	uri: Uri,
 	base?: Uri,
-	type?: FileType
+	type?: FileType,
 ): Promise<AnyFile> {
 	type = type ?? (await vscode.workspace.fs.stat(uri)).type;
 	base = base ?? uri;
@@ -58,7 +58,7 @@ export async function getFileTree(
 	if (type == FileType.Directory) {
 		const files = await vscode.workspace.fs.readDirectory(uri);
 		const childrenResults = await Promise.allSettled(
-			files.map(([name, type]) => getFileTree(Uri.joinPath(uri, name), base, type))
+			files.map(([name, type]) => getFileTree(Uri.joinPath(uri, name), base, type)),
 		);
 		const children = childrenResults
 			.filter((rslt) => rslt.status == "fulfilled")
@@ -75,7 +75,7 @@ export async function getFileTree(
 export function parseGlobs(
 	base: Uri,
 	include?: string,
-	exclude?: string
+	exclude?: string,
 ): [RelativePattern, RelativePattern | undefined] {
 	// TODO this means you can't use {} in the globals since you can't nest {}.
 	// Also you can't pass a whole folder as part of include/exclude either.
@@ -102,7 +102,7 @@ export function parseGlobs(
 export async function getFilteredFileList(
 	base: Uri,
 	include?: string,
-	exclude?: string
+	exclude?: string,
 ): Promise<Uri[]> {
 	const [includePattern, excludePattern] = parseGlobs(base, include, exclude);
 	let fileList = await vscode.workspace.findFiles(includePattern, excludePattern);
@@ -115,7 +115,7 @@ export async function getFilteredFileList(
 export async function getFilteredFileTree(
 	base: Uri,
 	include?: string,
-	exclude?: string
+	exclude?: string,
 ): Promise<AnyFile> {
 	return await listToFileTree(base, await getFilteredFileList(base, include, exclude));
 }
@@ -143,7 +143,7 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 		paths.map(async (uri): Promise<[string, AnyFile]> => {
 			const stat = await vscode.workspace.fs.stat(uri);
 			return [uri.fsPath, await createAnyFile(stat.type, uri, base, stat)];
-		})
+		}),
 	);
 	const flat = results
 		.filter((rslt) => rslt.status == "fulfilled")
@@ -152,7 +152,7 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 	const tree: Directory = (await createAnyFile(
 		FileType.Directory,
 		base,
-		base
+		base,
 	)) as Directory;
 
 	// build a tree. flat is in sorted order, so directories will show up before their children.

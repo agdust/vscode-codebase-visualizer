@@ -10,6 +10,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			const visualization = await cbrvAPI.create({
 				title: "Codebase Visualization",
 			});
-		})
+		}),
 	);
 }

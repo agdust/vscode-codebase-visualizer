@@ -31,7 +31,7 @@ type Node = d3.HierarchyCircularNode<AnyFile>;
 // Shortcut for d3.Selection
 type Selection<
 	GElement extends d3.BaseType = HTMLElement,
-	Datum = unknown
+	Datum = unknown,
 > = d3.Selection<GElement, Datum, d3.BaseType, undefined>;
 
 /**
@@ -218,7 +218,7 @@ export default class CBRVWebview {
 		const filteredCodebase = this.filteredCodebase();
 
 		const root = d3.hierarchy<AnyFile>(filteredCodebase, (f) =>
-			f.type == FileType.Directory ? f.children : undefined
+			f.type == FileType.Directory ? f.children : undefined,
 		);
 
 		root.sum((d) => {
@@ -275,7 +275,7 @@ export default class CBRVWebview {
 
 					const files = all.filter((d) => this.resolvedType(d) == FileType.File);
 					const directories = all.filter(
-						(d) => this.resolvedType(d) == FileType.Directory
+						(d) => this.resolvedType(d) == FileType.Directory,
 					);
 					const symlinks = all.filter((d) => d.data.type == FileType.SymbolicLink); // overlaps files/directories
 
@@ -288,7 +288,7 @@ export default class CBRVWebview {
 						.attr("x", 0)
 						.attr("y", 0)
 						.attr("font-size", (d) =>
-							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin)
+							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin),
 						);
 
 					// Add a folder name at the top. Add a "background" path behind the text to contrast with the circle
@@ -304,7 +304,7 @@ export default class CBRVWebview {
 						.attr("href", (d) => `#file-${encodeURIComponent(this.filePath(d))}`)
 						.attr("startOffset", "50%")
 						.attr("font-size", (d) =>
-							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin)
+							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin),
 						);
 
 					directories
@@ -346,7 +346,7 @@ export default class CBRVWebview {
 						})
 						.on(
 							"contextmenu",
-							d3ContextMenu((d: Node) => this.contextMenu(d))
+							d3ContextMenu((d: Node) => this.contextMenu(d)),
 						);
 
 					all
@@ -356,7 +356,7 @@ export default class CBRVWebview {
 								content: this.filePath(d),
 								delay: [1000, 0], // [show, hide]
 								followCursor: true,
-							})
+							}),
 						);
 
 					return all;
@@ -368,7 +368,7 @@ export default class CBRVWebview {
 				(exit) =>
 					exit
 						.each((d, i, nodes) => (nodes[i] as any)._tippy?.destroy()) // destroy any tippy instances
-						.remove()
+						.remove(),
 			);
 
 		all
@@ -400,14 +400,14 @@ export default class CBRVWebview {
 			.select<SVGTSpanElement>(".label")
 			.text((d) => d.data.name)
 			.each((d, i, nodes) =>
-				ellipsisText(nodes[i], d.r * 2, d.r * 2, this.s.label.padding)
+				ellipsisText(nodes[i], d.r * 2, d.r * 2, this.s.label.padding),
 			);
 
 		const directoryLabels = directories
 			.select<SVGTextPathElement>(".label")
 			.text((d) => d.data.name)
 			.each((d, i, nodes) =>
-				ellipsisText(nodes[i], Math.PI * d.r /* 1/2 circumference */)
+				ellipsisText(nodes[i], Math.PI * d.r /* 1/2 circumference */),
 			);
 
 		// Set the label background to the length of the labels
@@ -437,7 +437,7 @@ export default class CBRVWebview {
 	filteredCodebase() {
 		return filterFileTree(
 			this.codebase,
-			(f, path) => !(f.type == FileType.Directory && f.children.length == 0) // filter empty dirs
+			(f, path) => !(f.type == FileType.Directory && f.children.length == 0), // filter empty dirs
 		);
 	}
 
@@ -446,7 +446,9 @@ export default class CBRVWebview {
 		const domain = _(nodes.descendants()) // lodash is lazy
 			.filter((n) => n.data.type != FileType.Directory)
 			.map((n) =>
-				getExtension(n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name)
+				getExtension(
+					n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name,
+				),
 			)
 			.uniq()
 			.value();
@@ -522,7 +524,7 @@ export default class CBRVWebview {
 
 	emitUpdateSettings(
 		settingsUpdate: DeepPartial<WebviewVisualizationSettings>,
-		rerender = true
+		rerender = true,
 	) {
 		const newSettings = _.merge({}, this.settings, settingsUpdate);
 		if (rerender) {

@@ -26,6 +26,7 @@ import {
 import { getExtension, filterFileTree, loopIndex, OptionalKeys } from "../util/util";
 import { Point, Box } from "../util/geometry";
 import { ellipsisText, getRect } from "./rendering";
+import { presetColors } from "./colors";
 
 type Node = d3.HierarchyCircularNode<AnyFile>;
 // Shortcut for d3.Selection
@@ -33,39 +34,6 @@ type Selection<
 	GElement extends d3.BaseType = HTMLElement,
 	Datum = unknown,
 > = d3.Selection<GElement, Datum, d3.BaseType, undefined>;
-
-const presetColors: Record<string, string> = {
-	js: "#f1e05a",
-	ts: "#3178c6",
-	jsx: "#f1e05a",
-	tsx: "#3178c6",
-	py: "#3572A5",
-	java: "#b07219",
-	c: "#555555",
-	cpp: "#f34b7d",
-	cs: "#178600",
-	go: "#00ADD8",
-	rs: "#dea584",
-	php: "#4F5D95",
-	rb: "#701516",
-	swift: "#F05138",
-	kt: "#A97BFF",
-	dart: "#00B4AB",
-	lua: "#000080",
-	r: "#198CE7",
-	sh: "#89e051",
-	md: "#083fa1",
-	json: "#cbcb41",
-	xml: "#0060ac",
-	yaml: "#cb171e",
-	yml: "#cb171e",
-	sql: "#e38c00",
-	css: "#563d7c",
-	html: "#e34c26",
-	vue: "#41b883",
-	txt: "#aeb1b5",
-	gitignore: "#f44d27",
-};
 
 /**
  * This is the class that renders the actual diagram.

@@ -12,6 +12,7 @@ import {
 	Directory,
 } from "./types";
 import * as fileHelper from "./util/fileHelper";
+import { defaultSettings } from "./defaultSettings";
 
 /**
  * A mutable "view" on a Visualization that can be used to update it.
@@ -84,57 +85,6 @@ export class Visualization {
 	private files: Uri[] = [];
 
 	private onFilesChangeCallback?: (visState: VisualizationState) => Promise<void>;
-
-	private static readonly defaultSettings: DeepRequired<VisualizationSettings> = {
-		iconPath: null,
-		title: "CodeBase Relationship Visualizer",
-		filters: {
-			include: "",
-			exclude: "",
-		},
-		contextMenu: {
-			file: [
-				{
-					title: "Reveal in Explorer",
-					action: async (uri) =>
-						await vscode.commands.executeCommand("revealInExplorer", uri),
-				},
-				{
-					title: "Open in Editor",
-					action: async (uri) => await vscode.commands.executeCommand("vscode.open", uri),
-				},
-				{
-					title: "Copy Path",
-					action: (uri) => vscode.env.clipboard.writeText(uri.fsPath),
-				},
-				{
-					title: "Copy Relative Path",
-					action: (uri, vis) =>
-						vscode.env.clipboard.writeText(
-							path.relative(vis.codebase.fsPath, uri.fsPath),
-						),
-				},
-			],
-			directory: [
-				{
-					title: "Reveal in Explorer",
-					action: async (uri) =>
-						await vscode.commands.executeCommand("revealInExplorer", uri),
-				},
-				{
-					title: "Copy Path",
-					action: (uri) => vscode.env.clipboard.writeText(uri.fsPath),
-				},
-				{
-					title: "Copy Relative Path",
-					action: (uri, vis) =>
-						vscode.env.clipboard.writeText(
-							path.relative(vis.codebase.fsPath, uri.fsPath),
-						),
-				},
-			],
-		},
-	};
 
 	/** Construct a Visualization. You shouldn't call this directly, instead use {@link API.create} */
 	constructor(
@@ -318,19 +268,15 @@ export class Visualization {
 		settings = cloneDeep(settings);
 		// prepend defaults to menu items (if they are specified)
 		if (settings.contextMenu?.file)
-			settings.contextMenu.file.splice(
-				0,
-				0,
-				...Visualization.defaultSettings.contextMenu.file,
-			);
+			settings.contextMenu.file.splice(0, 0, ...defaultSettings.contextMenu.file);
 		if (settings.contextMenu?.directory)
 			settings.contextMenu.directory.splice(
 				0,
 				0,
-				...Visualization.defaultSettings.contextMenu.directory,
+				...defaultSettings.contextMenu.directory,
 			);
 
-		settings = _.merge({}, Visualization.defaultSettings, settings);
+		settings = _.merge({}, defaultSettings, settings);
 
 		return settings as DeepRequired<VisualizationSettings>;
 	}

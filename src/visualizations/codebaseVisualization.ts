@@ -1,8 +1,7 @@
 import * as vscode from "vscode";
-import { Uri } from "vscode";
 import _ from "lodash";
 
-import { API, VisualizationSettings } from "../api";
+import { API } from "../api";
 
 export async function activate(context: vscode.ExtensionContext) {
 	const cbrvAPI = new API(context);

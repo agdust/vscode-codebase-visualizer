@@ -1,13 +1,12 @@
 import * as vscode from "vscode";
-import _ from "lodash";
 
 import { API } from "../api";
 
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
 	const cbrvAPI = new API(context);
 	context.subscriptions.push(
 		vscode.commands.registerCommand("codeBaseRelationshipVisualizer.start", async () => {
-			const visualization = await cbrvAPI.create({
+			await cbrvAPI.create({
 				title: "Codebase Visualization",
 			});
 		}),

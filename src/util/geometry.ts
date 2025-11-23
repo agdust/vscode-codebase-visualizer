@@ -1,5 +1,3 @@
-import _ from "lodash";
-
 export type Point = [number, number];
 
 /** [x, y, width, height] */

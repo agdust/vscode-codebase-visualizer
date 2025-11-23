@@ -9,7 +9,7 @@ import * as fileHelper from "../../src/util/fileHelper";
 import { writeFileTree } from "./integrationHelpers";
 
 // I can't find a built-in way to get workspaceFolder. __dirname is .../CBRV/dist/test/test/integration
-const workspaceFolder = Uri.file(_.range(4).reduce((p) => path.dirname(p), __dirname));
+const workspaceFolder = Uri.file([0, 1, 2, 3].reduce((p) => path.dirname(p), __dirname));
 const samples = Uri.joinPath(workspaceFolder, "/test/sample-codebases");
 const minimal = Uri.joinPath(samples, "minimal");
 const symlinks = Uri.joinPath(samples, "symlinks");
@@ -125,7 +125,7 @@ const symlinkContents: Directory = {
 
 function expectTree(actual: AnyFile, expected: AnyFile) {
 	// Size can vary a bit by platform (line endings) so don't compare it directly
-	const stripFields = (file: AnyFile): any => {
+	const stripFields = (file: AnyFile): unknown => {
 		if (file.type == FileType.Directory) {
 			return {
 				...file,
@@ -214,9 +214,9 @@ describe("Test fileHelper", () => {
 		fileList = await vscode.workspace.findFiles(
 			new vscode.RelativePattern(symlinks, "**/*"),
 		);
-		const expected = _.cloneDeep(symlinkContents);
-		const loop = expected.children.find((c) => c.name == "loop")! as Directory;
-		loop.children = loop.children!.filter((c) => c.name != "loop"); // findFiles doesn't traverse the loop
+		const expected = structuredClone(symlinkContents);
+		const loop = expected.children.find((c) => c.name == "loop") as Directory;
+		loop.children = loop.children.filter((c) => c.name != "loop"); // findFiles doesn't traverse the loop
 		tree = await fileHelper.listToFileTree(symlinks, fileList);
 		expectTree(tree, expected);
 	});

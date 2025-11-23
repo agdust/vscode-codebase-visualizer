@@ -2,11 +2,11 @@ import { expect } from "vitest";
 import _ from "lodash";
 
 interface CustomMatchers<R = unknown> {
-	deepCloseTo(expected: any, epsilon?: number): R;
+	deepCloseTo(expected: unknown, epsilon?: number): R;
 }
 
 declare module "vitest" {
-	// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+	// eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-explicit-any
 	interface Assertion<T = any> extends CustomMatchers<T> {}
 
 	// eslint-disable-next-line @typescript-eslint/no-empty-object-type

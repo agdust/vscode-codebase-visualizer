@@ -351,8 +351,7 @@ export default class RepovisWebview {
 					update.classed("new", false),
 				(exit) =>
 					exit
-						.each((d, i, nodes) => {
-							const node = nodes[i];
+						.each((node) => {
 							if (node) {
 								(node as unknown as { _tippy?: Instance })._tippy?.destroy();
 							}

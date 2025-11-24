@@ -4,8 +4,7 @@ import { describe, it } from "mocha";
 import { AnyFile, FileType } from "../src/types";
 import { getExtension } from "../src/util/getExtension";
 import { filterFileTree } from "../src/util/filterFileTree";
-import { normalizedJSONStringify } from "../src/util/normalizedJSONStringify";
-import { loopIndex } from "../src/util/loopIndex";
+import { normalizedJsonStringify } from "../src/util/normalizedJsonStringify";
 
 describe("Test utils.ts", () => {
 	it("test getExtension", () => {
@@ -132,39 +131,19 @@ describe("Test utils.ts", () => {
 		});
 	});
 
-	it("test normalizedJSONStringify", () => {
-		expect(normalizedJSONStringify(1)).to.equal("1");
-		expect(normalizedJSONStringify("a")).to.equal('"a"');
-		expect(normalizedJSONStringify(null)).to.equal("null");
-		expect(normalizedJSONStringify([1, 2, 3])).to.equal("[1,2,3]");
-		expect(normalizedJSONStringify({ a: 2, b: 1 })).to.equal('{"a":2,"b":1}');
-		expect(normalizedJSONStringify({ b: 1, a: 2 })).to.equal('{"a":2,"b":1}');
-		expect(normalizedJSONStringify({})).to.equal("{}");
+	it("test normalizedJsonStringify", () => {
+		expect(normalizedJsonStringify(1)).to.equal("1");
+		expect(normalizedJsonStringify("a")).to.equal('"a"');
+		expect(normalizedJsonStringify(null)).to.equal("null");
+		expect(normalizedJsonStringify([1, 2, 3])).to.equal("[1,2,3]");
+		expect(normalizedJsonStringify({ a: 2, b: 1 })).to.equal('{"a":2,"b":1}');
+		expect(normalizedJsonStringify({ b: 1, a: 2 })).to.equal('{"a":2,"b":1}');
+		expect(normalizedJsonStringify({})).to.equal("{}");
 		expect(
-			normalizedJSONStringify({
+			normalizedJsonStringify({
 				b: 1,
 				a: { d: [1, 2, 3], c: null },
 			}),
 		).to.equal('{"a":{"c":null,"d":[1,2,3]},"b":1}');
-	});
-
-	it("test loopIndex", () => {
-		expect(loopIndex(3, 5)).to.equal(3);
-		expect(loopIndex(0, 5)).to.equal(0);
-		expect(loopIndex(5, 5)).to.equal(0);
-		expect(loopIndex(6, 5)).to.equal(1);
-		expect(loopIndex(12, 5)).to.equal(2);
-		expect(loopIndex(-1, 5)).to.equal(4);
-		expect(loopIndex(-2, 5)).to.equal(3);
-		expect(loopIndex(-5, 5)).to.equal(0);
-		expect(loopIndex(-7, 5)).to.equal(3);
-		expect(loopIndex(-12, 5)).to.equal(3);
-
-		expect(loopIndex(0, 1)).to.equal(0);
-		expect(loopIndex(1, 1)).to.equal(0);
-		expect(loopIndex(-1, 1)).to.equal(0);
-
-		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
-		expect(loopIndex(0, 0)).to.be.NaN;
 	});
 });

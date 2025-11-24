@@ -3,7 +3,7 @@ import { isObject } from "./isObject";
 /**
  * Converts a value to a normalized JSON string, sorting object keys.
  */
-export function normalizedJSONStringify(val: unknown): string {
+export function normalizedJsonStringify(val: unknown): string {
 	return JSON.stringify(val, (_key: string, val: unknown) => {
 		if (isObject(val)) {
 			return Object.keys(val)

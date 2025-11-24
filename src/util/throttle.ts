@@ -1,7 +1,6 @@
 /**
  * Creates a throttled function that only invokes func at most once per every wait milliseconds.
  */
-
 export function throttle(
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	func: (...args: any[]) => void,

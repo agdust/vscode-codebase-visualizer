@@ -11,7 +11,7 @@ import { getExtension } from "../util/getExtension";
 import { filterFileTree } from "../util/filterFileTree";
 import { throttle } from "../util/throttle";
 import { Point, Box } from "../util/geometry";
-import { ellipsisText, getRect } from "./rendering";
+import { ellipsisText, getRect, wrapText } from "./rendering";
 import { presetColors, unknownColor } from "./colors";
 
 type Node = d3.HierarchyCircularNode<AnyFile>;
@@ -145,13 +145,13 @@ export default class RepovisWebview {
 			.on("keydown", (event) => {
 				const key = event.key;
 				if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
-					const dx = key == "ArrowLeft" ? -1 : key == "ArrowRight" ? +1 : 0;
-					const dy = key == "ArrowUp" ? -1 : key == "ArrowDown" ? +1 : 0;
+					const dx = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? +1 : 0;
+					const dy = key === "ArrowUp" ? -1 : key === "ArrowDown" ? +1 : 0;
 					const amount = this.s.zoom.panKeyAmount / this.transform.k;
 					zoom.translateBy(this.diagram, dx * amount, dy * amount);
 				} else if (event.ctrlKey && ["-", "="].includes(key)) {
 					const amount = this.s.zoom.zoomKeyAmount;
-					zoom.scaleBy(this.diagram, key == "=" ? amount : 1 / amount);
+					zoom.scaleBy(this.diagram, key === "=" ? amount : 1 / amount);
 					event.stopPropagation(); // prevent VSCode from zooming the interface
 				}
 			});
@@ -202,7 +202,7 @@ export default class RepovisWebview {
 			}
 			if (d.type === FileType.Directory) {
 				// only give empty folders a size. Empty folders are normally
-				return d.children.length == 0 ? 1 : 0; // filtered, but root can be empty.
+				return d.children.length === 0 ? 1 : 0; // filtered, but root can be empty.
 			}
 			if (d.type === FileType.SymbolicLink) {
 				return this.s.file.minSize; // render all symbolic links as the minimum size.
@@ -242,13 +242,13 @@ export default class RepovisWebview {
 							return this.filePath(d);
 						})
 						.classed("file", (d) => {
-							return this.resolvedType(d) == FileType.File;
+							return this.resolvedType(d) === FileType.File;
 						})
 						.classed("directory", (d) => {
-							return this.resolvedType(d) == FileType.Directory;
+							return this.resolvedType(d) === FileType.Directory;
 						})
 						.classed("symlink", (d) => {
-							return d.data.type == FileType.SymbolicLink;
+							return d.data.type === FileType.SymbolicLink;
 						})
 						.classed("new", true); // We'll use this to reselect newly added nodes later.
 
@@ -262,19 +262,19 @@ export default class RepovisWebview {
 						});
 
 					const files = all.filter((d) => {
-						return this.resolvedType(d) == FileType.File;
+						return this.resolvedType(d) === FileType.File;
 					});
 					const directories = all.filter((d) => {
-						return this.resolvedType(d) == FileType.Directory;
+						return this.resolvedType(d) === FileType.Directory;
 					});
 					const symlinks = all.filter((d) => {
-						return d.data.type == FileType.SymbolicLink;
+						return d.data.type === FileType.SymbolicLink;
 					}); // overlaps files/directories
 
 					// Add labels
 					files
 						.filter((d) => {
-							return d.data.type != FileType.SymbolicLink;
+							return d.data.type !== FileType.SymbolicLink;
 						})
 						.append("text")
 						.append("tspan")
@@ -324,17 +324,17 @@ export default class RepovisWebview {
 						.attr("width", iconSize) // minSize is radius
 						.attr("height", iconSize)
 						.style("fill", (d) => {
-							const isDir = this.resolvedType(d) == FileType.Directory;
+							const isDir = this.resolvedType(d) === FileType.Directory;
 							return `var(--vscode-editor-${isDir ? "foreground" : "background"})`;
 						});
 
 					// Add event listeners.
 					all.on("dblclick", (_, d) => {
-						if (d.data.type == FileType.Directory) {
+						if (d.data.type === FileType.Directory) {
 							this.emit({ type: "reveal", file: this.filePath(d) });
-						} else if (d.data.type == FileType.File) {
+						} else if (d.data.type === FileType.File) {
 							this.emit({ type: "open", file: this.filePath(d) });
-						} else if (d.data.type == FileType.SymbolicLink) {
+						} else if (d.data.type === FileType.SymbolicLink) {
 							const jumpTo = this.pathMap.get(d.data.resolved);
 							if (jumpTo) {
 								this.emphasizeFile(jumpTo);
@@ -385,20 +385,10 @@ export default class RepovisWebview {
 		const directories = changed.filter(".directory");
 
 		files.attr("fill", (d) => {
-			return this.getItemColor(d.data);
+			return this.getItemColor(d.data).color;
 		});
 
-		files
-			.select<SVGTSpanElement>(".label")
-			.text((d) => {
-				return d.data.name;
-			})
-			.each((d, i, nodes) => {
-				const node = nodes[i];
-				if (node) {
-					ellipsisText(node, d.r * 2, d.r * 2, this.s.label.padding);
-				}
-			});
+		this.updateFileLabels(files);
 
 		const directoryLabels = directories
 			.select<SVGTextPathElement>(".label")
@@ -412,17 +402,19 @@ export default class RepovisWebview {
 				}
 			});
 
+		const dirLabelsNodes = directoryLabels.nodes();
+
 		// Set the label background to the length of the labels
-		directories.select<SVGTextElement>(".label-background").each((d, i, nodes) => {
-			const labelNode = directoryLabels.nodes()[i];
-			const node = nodes[i];
-			if (labelNode && node) {
-				const length = labelNode.getComputedTextLength() + 4;
+		directories.select<SVGTextElement>(".label-background").each((d, i, dirLabelBgNodes) => {
+			const dirLabelNode = dirLabelsNodes[i];
+			const dirLabelBgNode = dirLabelBgNodes[i];
+			if (dirLabelNode && dirLabelBgNode) {
+				const length = dirLabelNode.getComputedTextLength() + 2;
 				const angle = length / d.r;
 				const top = (3 * Math.PI) / 2;
 				const path = d3.path();
 				path.arc(0, 0, d.r, top - angle / 2, top + angle / 2);
-				node.setAttribute("d", path.toString());
+				dirLabelBgNode.setAttribute("d", path.toString());
 			}
 		});
 
@@ -440,20 +432,116 @@ export default class RepovisWebview {
 			}
 		});
 		this.pathMap = newPathMap;
+
+		this.updateFontSizes();
+	}
+
+	updateFileLabels(files: Selection<SVGGElement, Node>): void {
+		files
+			.select<SVGTextElement>(".label")
+			.text(null) // Clear existing text
+			.each((d, i, nodes) => {
+				const node = nodes[i];
+				if (node) {
+					node.removeAttribute("data-fit-font-size");
+					// Calculate width based on circle radius (approximate square inside circle)
+					const width = d.r * Math.sqrt(2);
+					// Use a denser line height (0.9)
+					wrapText(node, d.data.name, width, 0.9, this.s.label.fontMin);
+				}
+			})
+			.style("fill", (d) => {
+				return this.getItemColor(d.data).textColor;
+			});
+	}
+
+	updateFontSizes(ignoreFit = false): void {
+		const k = this.transform.k;
+		// Base font size that scales with zoom to maintain visual size
+		const baseFontSize = (this.s.label.fontMin * 2.5) / k;
+
+		this.fileLayer.selectAll<SVGTextElement, Node>(".file .label").each((d, i, nodes) => {
+			const node = nodes[i];
+			if (node) {
+				// Calculate max font size that fits in the circle
+				// Circle radius is d.r
+				// Text width is roughly d.r * sqrt(2) (square in circle)
+				// We want the text to fit.
+				// Let's say max font size is proportional to radius.
+				// Heuristic: font size shouldn't exceed radius / 2 roughly?
+				// Or better: use the baseFontSize but cap it at something proportional to d.r
+				// If d.r is small, font size must be small.
+				// If d.r is large, font size can be large (up to baseFontSize).
+
+				// "Stop scaling text not when it reaches certain size, but when it fits completely and nicely in the circle."
+				// This means we should calculate the font size based on the circle size.
+				// But we also want it to scale with zoom (get larger visually as we zoom in).
+				// So: fontSize = min(baseFontSize, maxFontSizeForCircle)
+
+				// maxFontSizeForCircle:
+				// If we want it to fit "nicely", maybe it shouldn't exceed d.r / 3?
+				// Let's try d.r / 2.5 as a max size in SVG units.
+				const maxFontSizeForCircle = d.r / 2;
+
+				// However, baseFontSize (C/k) gets smaller as we zoom in (k increases).
+				// maxFontSizeForCircle (d.r/2) is constant in SVG units.
+				// So as we zoom in, baseFontSize decreases and eventually becomes smaller than maxFontSizeForCircle.
+				// Wait, if baseFontSize decreases, the text gets smaller in SVG units, so it stays same visual size.
+				// If maxFontSizeForCircle is constant, then at low zoom (small k), baseFontSize is large.
+				// If baseFontSize > maxFontSizeForCircle, we clamp it.
+				// So for small circles (small d.r), maxFontSizeForCircle is small.
+				// So text will be small in SVG units.
+				// As we zoom in (k increases), baseFontSize decreases.
+				// Once baseFontSize < maxFontSizeForCircle, the text starts scaling with zoom (maintaining visual size).
+				// Before that (zoomed out), it's clamped to the circle size (so it scales with the circle, i.e. grows as we zoom in).
+
+				// User said: "Stop scaling text not when it reaches certain size, but when it fits completely and nicely in the circle."
+				// "Right now small circles have constantly overflowing big text"
+				// This implies that for small circles, the text is too big.
+				// So we need to clamp the font size based on d.r.
+
+				let fontSize = Math.min(baseFontSize, maxFontSizeForCircle);
+
+				const fitFontSizeAttr = node.getAttribute("data-fit-font-size");
+				if (!ignoreFit && fitFontSizeAttr) {
+					fontSize = Math.min(fontSize, parseFloat(fitFontSizeAttr));
+				}
+
+				d3.select(node).attr("font-size", fontSize);
+			}
+		});
+
+		// For directories, we can use a similar logic or keep the base scaling
+		this.fileLayer
+			.selectAll<SVGTextElement, Node>(".directory .label")
+			.each((d, i, nodes) => {
+				const node = nodes[i];
+				if (node) {
+					const maxFontSizeForCircle = d.r / 2;
+					let fontSize = Math.min(baseFontSize, maxFontSizeForCircle);
+
+					const fitFontSizeAttr = node.getAttribute("data-fit-font-size");
+					if (!ignoreFit && fitFontSizeAttr) {
+						fontSize = Math.min(fontSize, parseFloat(fitFontSizeAttr));
+					}
+
+					d3.select(node).attr("font-size", fontSize);
+				}
+			});
 	}
 
 	filteredCodebase(): Directory {
 		return filterFileTree(
 			this.codebase,
 			(f) => {
-				return !(f.type == FileType.Directory && f.children.length == 0);
+				return !(f.type === FileType.Directory && f.children.length === 0);
 			}, // filter empty dirs
 		);
 	}
 
-	getItemColor(item: AnyFile): string {
+	getItemColor(item: AnyFile): { color: string; textColor: string } {
 		if (item.type === FileType.Directory) {
-			return "transparent";
+			return { color: "transparent", textColor: "var(--vscode-editor-foreground)" };
 		}
 
 		const ext = getExtension(
@@ -506,6 +594,7 @@ export default class RepovisWebview {
 		const oldK = this.transform.k;
 		this.transform = e.transform;
 		this.zoomWindow.attr("transform", this.transform.toString());
+		this.updateFontSizes(true);
 		if (e.transform.k !== oldK) {
 			// zoom also triggers for pan.
 			this.throttledUpdate();

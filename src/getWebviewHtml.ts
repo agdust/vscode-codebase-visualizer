@@ -40,12 +40,20 @@ export const getWebviewHtml = (scriptUri: string, styleUri: string): string => {
 						/>
 					</div>
 				</div>
-				<details id="file-tree-details">
+
+				<details id="file-tree-details" class="filter-group">
 					<summary class="sidebar-header" id="file-tree-header" style="cursor: pointer">
 						<span class="sidebar-title">File Tree</span>
 						<span class="tree-toggle"></span>
 					</summary>
 					<div id="file-tree" class="file-tree"></div>
+				</details>
+				<details id="extension-filter-details" class="filter-group">
+					<summary class="sidebar-header" id="extension-filter-header" style="cursor: pointer">
+						<span class="sidebar-title">Extensions</span>
+						<span class="tree-toggle"></span>
+					</summary>
+					<div id="extension-filter" class="file-tree"></div>
 				</details>
 			</div>
 			<div id="content">

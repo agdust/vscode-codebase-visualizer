@@ -1,6 +1,10 @@
 import RepovisWebview from "./repovis-webview";
 import { RepovisMessage, RepovisWebviewMessage } from "../types";
 import { FileTree } from "./FileTree";
+import { ExtensionFilter } from "./ExtensionFilter";
+import { filterFileTree } from "../util/filterFileTree";
+import { getExtension } from "../util/getExtension";
+import { FileType } from "../types";
 
 import "./webview.css";
 
@@ -25,20 +29,27 @@ function main() {
 	const includeInput = getElement<HTMLInputElement>("include");
 	const excludeInput = getElement<HTMLInputElement>("exclude");
 	const fileTreeContainer = getElement<HTMLDivElement>("file-tree");
+	const extensionFilterContainer = getElement<HTMLDivElement>("extension-filter");
 
 	// State for file tree checkboxes
 	const excludedPaths = new Set<string>();
+	const excludedExtensions = new Set<string>();
 
 	const updateFilters = () => {
 		if (view) {
 			// Combine manual exclude input with checkbox exclusions
 			const manualExclude = excludeInput.value.trim();
 			const checkboxExclude = Array.from(excludedPaths).join(",");
-			const combinedExclude = manualExclude
-				? checkboxExclude
-					? `${manualExclude},${checkboxExclude}`
-					: manualExclude
-				: checkboxExclude;
+
+			let combinedExclude = manualExclude;
+			if (checkboxExclude) {
+				combinedExclude = combinedExclude
+					? `${combinedExclude},${checkboxExclude}`
+					: checkboxExclude;
+			}
+
+			// We don't send extension exclusions to the backend anymore, we filter client-side
+			// so that the extension list remains populated with all extensions.
 
 			view.emitUpdateSettings({
 				include: includeInput.value.trim(),
@@ -48,6 +59,7 @@ function main() {
 	};
 
 	const fileTree = new FileTree(excludedPaths, updateFilters);
+	const extensionFilter = new ExtensionFilter(excludedExtensions, updateFilters);
 
 	addEventListener("message", (event: MessageEvent) => {
 		const message: RepovisMessage = event.data;
@@ -60,15 +72,28 @@ function main() {
 
 			if (message.codebase) {
 				fileTree.render(message.codebase, fileTreeContainer);
+				extensionFilter.render(message.codebase, extensionFilterContainer);
+			}
+
+			// Apply client-side extension filtering
+			let filteredCodebase = message.codebase;
+			if (filteredCodebase && excludedExtensions.size > 0) {
+				filteredCodebase = filterFileTree(filteredCodebase, (file) => {
+					if (file.type === FileType.File) {
+						const ext = getExtension(file.name);
+						return !excludedExtensions.has(ext);
+					}
+					return true;
+				});
 			}
 
 			if (view) {
-				view.update(message.settings, message.codebase);
+				view.update(message.settings, filteredCodebase);
 				return;
 			}
 
-			if (message.settings && message.codebase) {
-				view = new RepovisWebview(message.settings, message.codebase);
+			if (message.settings && filteredCodebase) {
+				view = new RepovisWebview(message.settings, filteredCodebase);
 				return;
 			}
 

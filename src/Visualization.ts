@@ -324,7 +324,8 @@ export class Visualization {
 			Uri.joinPath(extPath, "dist", "webview", "webview.js"),
 		);
 
-		const html = fs.readFileSync(path.resolve(".", "webview.html"), {
+		const htmlPath = path.join(this.context.extensionPath, "src", "webview.html");
+		const html = fs.readFileSync(htmlPath, {
 			encoding: "utf-8",
 		});
 

@@ -11,8 +11,10 @@ import { getExtension } from "../util/getExtension";
 import { filterFileTree } from "../util/filterFileTree";
 import { throttle } from "../util/throttle";
 import { Point, Box } from "../util/geometry";
-import { ellipsisText, getRect, wrapText } from "./rendering";
-import { presetColors, unknownColor } from "./colors";
+import { getRect } from "./lib/getRect";
+import { wrapText } from "./lib/wrapText";
+import { ellipsisText } from "./lib/ellipsisText";
+import { presetColors, unknownColor } from "./lib/colors";
 
 type Node = d3.HierarchyCircularNode<AnyFile>;
 // Shortcut for d3.Selection
@@ -145,8 +147,8 @@ export default class RepovisWebview {
 			.on("keydown", (event) => {
 				const key = event.key;
 				if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
-					const dx = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? +1 : 0;
-					const dy = key === "ArrowUp" ? -1 : key === "ArrowDown" ? +1 : 0;
+					const dx = key === "ArrowRight" ? -1 : key === "ArrowLeft" ? +1 : 0;
+					const dy = key === "ArrowDown" ? -1 : key === "ArrowUp" ? +1 : 0;
 					const amount = this.s.zoom.panKeyAmount / this.transform.k;
 					zoom.translateBy(this.diagram, dx * amount, dy * amount);
 				} else if (event.ctrlKey && ["-", "="].includes(key)) {
@@ -405,18 +407,20 @@ export default class RepovisWebview {
 		const dirLabelsNodes = directoryLabels.nodes();
 
 		// Set the label background to the length of the labels
-		directories.select<SVGTextElement>(".label-background").each((d, i, dirLabelBgNodes) => {
-			const dirLabelNode = dirLabelsNodes[i];
-			const dirLabelBgNode = dirLabelBgNodes[i];
-			if (dirLabelNode && dirLabelBgNode) {
-				const length = dirLabelNode.getComputedTextLength() + 2;
-				const angle = length / d.r;
-				const top = (3 * Math.PI) / 2;
-				const path = d3.path();
-				path.arc(0, 0, d.r, top - angle / 2, top + angle / 2);
-				dirLabelBgNode.setAttribute("d", path.toString());
-			}
-		});
+		directories
+			.select<SVGTextElement>(".label-background")
+			.each((d, i, dirLabelBgNodes) => {
+				const dirLabelNode = dirLabelsNodes[i];
+				const dirLabelBgNode = dirLabelBgNodes[i];
+				if (dirLabelNode && dirLabelBgNode) {
+					const length = dirLabelNode.getComputedTextLength() + 2;
+					const angle = length / d.r;
+					const top = (3 * Math.PI) / 2;
+					const path = d3.path();
+					path.arc(0, 0, d.r, top - angle / 2, top + angle / 2);
+					dirLabelBgNode.setAttribute("d", path.toString());
+				}
+			});
 
 		this.allFilesSelection = all;
 

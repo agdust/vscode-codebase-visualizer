@@ -11,7 +11,17 @@ export class FileTree {
 
 	public render(root: Directory, container: HTMLElement): void {
 		container.innerHTML = "";
-		const tree = this.createTree(root, "");
+		let node: Directory = root;
+		let path = "";
+		while (node.children.length === 1) {
+			const child = node.children[0];
+			if (!child || child.type !== FileType.Directory) {
+				break;
+			}
+			path = path ? `${path}/${node.name}` : node.name;
+			node = child;
+		}
+		const tree = this.createTree(node, path);
 		container.appendChild(tree);
 	}
 
@@ -45,13 +55,6 @@ export class FileTree {
 				this.excludedPaths.delete(currentPath);
 			} else {
 				this.excludedPaths.add(currentPath);
-			}
-			// If directory, toggle children
-			if (isDir) {
-				const childrenCheckboxes = nodeEl.querySelectorAll('input[type="checkbox"]');
-				childrenCheckboxes.forEach((cb) => {
-					(cb as HTMLInputElement).checked = isChecked;
-				});
 			}
 			this.onUpdate();
 		};

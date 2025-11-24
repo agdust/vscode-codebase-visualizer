@@ -1,10 +1,9 @@
 import RepovisWebview from "./repovis-webview";
-import { RepovisMessage, RepovisWebviewMessage } from "../types";
+import { RepovisMessage, RepovisWebviewMessage, Directory } from "../types";
 import { FileTree } from "./FileTree";
 import { ExtensionFilter } from "./ExtensionFilter";
 import { filterFileTree } from "../util/filterFileTree";
-import { getExtension } from "../util/getExtension";
-import { FileType } from "../types";
+import { createFilterPredicate } from "./filterLogic";
 
 import "./webview.css";
 
@@ -34,32 +33,35 @@ function main() {
 	// State for file tree checkboxes
 	const excludedPaths = new Set<string>();
 	const excludedExtensions = new Set<string>();
+	let rawCodebase: Directory | undefined;
 
-	const updateFilters = () => {
-		if (view) {
-			// Combine manual exclude input with checkbox exclusions
-			const manualExclude = excludeInput.value.trim();
-			const checkboxExclude = Array.from(excludedPaths).join(",");
-
-			let combinedExclude = manualExclude;
-			if (checkboxExclude) {
-				combinedExclude = combinedExclude
-					? `${combinedExclude},${checkboxExclude}`
-					: checkboxExclude;
-			}
-
-			// We don't send extension exclusions to the backend anymore, we filter client-side
-			// so that the extension list remains populated with all extensions.
-
-			view.emitUpdateSettings({
-				include: includeInput.value.trim(),
-				exclude: combinedExclude,
-			});
+	const updateBackendFilters = () => {
+		if (!view) {
+			return;
 		}
+		view.emitUpdateSettings({
+			include: includeInput.value.trim(),
+			exclude: excludeInput.value.trim(),
+		});
 	};
 
-	const fileTree = new FileTree(excludedPaths, updateFilters);
-	const extensionFilter = new ExtensionFilter(excludedExtensions, updateFilters);
+	const updateClientFilters = () => {
+		if (!view || !rawCodebase) {
+			return;
+		}
+
+		view.update(
+			undefined,
+			filterFileTree(
+				rawCodebase,
+				createFilterPredicate(excludedPaths, excludedExtensions),
+				rawCodebase.name,
+			),
+		);
+	};
+
+	const fileTree = new FileTree(excludedPaths, updateClientFilters);
+	const extensionFilter = new ExtensionFilter(excludedExtensions, updateClientFilters);
 
 	addEventListener("message", (event: MessageEvent) => {
 		const message: RepovisMessage = event.data;
@@ -71,20 +73,19 @@ function main() {
 			}
 
 			if (message.codebase) {
+				rawCodebase = message.codebase;
 				fileTree.render(message.codebase, fileTreeContainer);
 				extensionFilter.render(message.codebase, extensionFilterContainer);
 			}
 
-			// Apply client-side extension filtering
-			let filteredCodebase = message.codebase;
-			if (filteredCodebase && excludedExtensions.size > 0) {
-				filteredCodebase = filterFileTree(filteredCodebase, (file) => {
-					if (file.type === FileType.File) {
-						const ext = getExtension(file.name);
-						return !excludedExtensions.has(ext);
-					}
-					return true;
-				});
+			// Apply client-side filtering
+			let filteredCodebase = rawCodebase;
+			if (filteredCodebase) {
+				filteredCodebase = filterFileTree(
+					filteredCodebase,
+					createFilterPredicate(excludedPaths, excludedExtensions),
+					filteredCodebase.name,
+				);
 			}
 
 			if (view) {
@@ -115,8 +116,8 @@ function main() {
 	openSidebarBtn.addEventListener("click", toggleSidebar);
 	closeSidebarBtn.addEventListener("click", toggleSidebar);
 
-	includeInput.addEventListener("change", updateFilters);
-	excludeInput.addEventListener("change", updateFilters);
+	includeInput.addEventListener("change", updateBackendFilters);
+	excludeInput.addEventListener("change", updateBackendFilters);
 
 	vscode.postMessage({ type: "ready" });
 }

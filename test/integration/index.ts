@@ -17,14 +17,14 @@ export async function run(): Promise<void> {
 			// Run the mocha test
 			mocha.run((failures) => {
 				if (failures > 0) {
-					reject(new Error(`${failures} tests failed.`));
+					reject(new Error(`${failures.toString()} tests failed.`));
 				} else {
 					resolve();
 				}
 			});
 		} catch (err) {
 			console.error(err);
-			reject(err);
+			reject(err instanceof Error ? err : new Error("Unknown error"));
 		}
 	});
 }

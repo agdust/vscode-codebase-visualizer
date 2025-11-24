@@ -76,7 +76,7 @@ export class FileTree {
 		if (isDir) {
 			const childrenContainer = document.createElement("div");
 			childrenContainer.className = "tree-children";
-			(node as Directory).children.forEach((child) => {
+			node.children.forEach((child) => {
 				childrenContainer.appendChild(this.createTree(child, currentPath));
 			});
 			nodeEl.appendChild(childrenContainer);

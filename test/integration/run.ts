@@ -5,7 +5,9 @@ import { runTests } from "@vscode/test-electron";
 async function main() {
 	try {
 		// I can't find a built-in way to get workspaceFolder. __dirname is .../repovis/dist/test/test/integration
-		const workspaceFolder = [...Array(4)].reduce((p) => path.dirname(p), __dirname);
+		const workspaceFolder: string = [...Array<number>(4)].reduce((p) => {
+			return path.dirname(p);
+		}, __dirname);
 
 		// Opening files in the tests with `vscode.commands.executeCommand("vscode.openFolder", ...)` doesn't work
 		// reliably. It sometimes works and sometimes doesn't, even with manual sleeps. And it starts a new VSCode
@@ -35,4 +37,6 @@ async function main() {
 	}
 }
 
-main();
+main().catch((error: unknown) => {
+	console.error(error);
+});

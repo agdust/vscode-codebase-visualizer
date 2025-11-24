@@ -10,7 +10,7 @@ export function wrapText(
 	if (textElement.getComputedTextLength() <= width) {
 		// It fits! Center it vertically
 		const startDy = 0.35; // Center single line
-		textElement.setAttribute("dy", `${startDy}em`);
+		textElement.setAttribute("dy", `${startDy.toString()}em`);
 		return;
 	}
 
@@ -29,7 +29,7 @@ export function wrapText(
 			textElement.setAttribute("font-size", String(newFontSize));
 			textElement.setAttribute("data-fit-font-size", String(newFontSize));
 			const startDy = 0.35;
-			textElement.setAttribute("dy", `${startDy}em`);
+			textElement.setAttribute("dy", `${startDy.toString()}em`);
 			return;
 		}
 
@@ -43,6 +43,6 @@ export function wrapText(
 	const totalHeightEm = tspans.length * lineHeight;
 	const startDy = -totalHeightEm / 2 + 0.35;
 	tspans.forEach((t, i) => {
-		t.setAttribute("dy", `${startDy + i * lineHeight}em`);
+		t.setAttribute("dy", `${(startDy + i * lineHeight).toString()}em`);
 	});
 }

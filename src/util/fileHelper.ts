@@ -64,10 +64,10 @@ export async function getFileTree(
 		);
 		const children = childrenResults
 			.filter((result) => {
-				return result.status == "fulfilled";
+				return result.status === "fulfilled";
 			})
 			.map((result) => {
-				return (result as PromiseFulfilledResult<AnyFile>).value;
+				return result.value;
 			})
 			.toSorted(sortFiles);
 
@@ -169,7 +169,7 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 			return rslt.status === "fulfilled";
 		})
 		.map((rslt) => {
-			return (rslt as PromiseFulfilledResult<[string, AnyFile]>).value;
+			return rslt.value;
 		});
 
 	const tree: Directory = (await createAnyFile(

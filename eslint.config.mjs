@@ -1,14 +1,23 @@
 import eslint from '@eslint/js';
+import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
 
-export default tseslint.config(
+export default defineConfig(
 	eslint.configs.recommended,
-	...tseslint.configs.strict,
+	tseslint.configs.strictTypeChecked,
 	{
-		ignores: ['media/**', 'dist/**', 'out/**', 'node_modules/**', 'test/sample-repos/'],
+		languageOptions: {
+			parserOptions: {
+				projectService: {
+					allowDefaultProject: ['eslint.config.mjs'],
+				},
+			},
+		},
 	},
+	globalIgnores(['media/**', 'dist/**', 'out/**', 'node_modules/**', 'test/sample-repos/', '.vscode-test', '.vscode']),
 	{
+		files: ['**/*.ts', '**/*.js'],
 		languageOptions: {
 			globals: {
 				...globals.node,
@@ -34,6 +43,8 @@ export default tseslint.config(
 				}
 			],
 			'@typescript-eslint/no-explicit-any': 'error',
+			'@typescript-eslint/no-unnecessary-boolean-literal-compare': 'off', // forces to use type-casting methods
+			'@typescript-eslint/no-unnecessary-condition': 'off', // forces to delete last `if` statement
 			'@typescript-eslint/explicit-module-boundary-types': 'warn',
 			'@typescript-eslint/no-non-null-assertion': 'error',
 			'arrow-body-style': ["error", 'always'],

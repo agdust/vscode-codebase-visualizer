@@ -12,12 +12,14 @@ declare global {
 
 use((chai, _utils) => {
 	chai.Assertion.addMethod("deepCloseTo", function (expected: unknown, epsilon = 1e-8) {
-		const received = this._obj;
-		const pass = deepEqual(received, expected, (a, b) =>
-			[a, b].every((x) => typeof x == "number")
+		const received: unknown = this._obj;
+		const pass = deepEqual(received, expected, (a, b) => {
+			return [a, b].every((x) => {
+				return typeof x === "number";
+			})
 				? Math.abs((a as number) - (b as number)) < epsilon
-				: undefined,
-		);
+				: undefined;
+		});
 
 		this.assert(
 			pass,

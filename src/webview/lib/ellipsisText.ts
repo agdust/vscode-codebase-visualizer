@@ -14,9 +14,12 @@ export function ellipsisText(
 
 	if (fontHeight > availableHeight) {
 		el.textContent = "";
-	} else if (el.getComputedTextLength() > availableWidth) {
+		return el.textContent;
+	}
+
+	if (el.getComputedTextLength() > availableWidth) {
 		// need to crop it
-		const originalText = el.textContent ?? "";
+		const originalText = el.textContent;
 
 		// binary search to find the optimal length
 		let fits = 0,
@@ -41,5 +44,5 @@ export function ellipsisText(
 		}
 	}
 
-	return el.textContent ?? "";
+	return el.textContent;
 }

@@ -1,11 +1,12 @@
 import * as vscode from "vscode";
 
 import { API } from "./api";
-import * as codebaseVisualization from "./visualizations/codebaseVisualization";
-export async function activate(context: vscode.ExtensionContext): Promise<API> {
+import { fileStructureVisualization } from "./visualizations/fileStructureVisualization";
+
+export function activate(context: vscode.ExtensionContext): API {
 	const repovisApi = new API(context);
 
-	await codebaseVisualization.activate(context);
+	fileStructureVisualization.activate(context);
 
 	return repovisApi;
 }

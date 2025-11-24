@@ -1,5 +1,4 @@
 import { Uri } from "vscode";
-import { Visualization } from "./Visualization";
 
 /**
  * Settings and configuration for a Visualization.

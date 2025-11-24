@@ -6,7 +6,9 @@ export default defineConfig({
 		target: "node22",
 		lib: {
 			entry: path.resolve(__dirname, "src/extension.ts"),
-			fileName: () => "extension.js",
+			fileName: () => {
+				return "extension.js";
+			},
 			formats: ["cjs"],
 		},
 		outDir: "dist",

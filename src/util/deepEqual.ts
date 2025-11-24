@@ -39,10 +39,17 @@ function deepEqualInternal(
 
 	if (keysA.length !== keysB.length) return false;
 
-	for (const k of keysA) {
-		if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		if (!deepEqualInternal((a as any)[k], (b as any)[k], k, comparator)) return false;
+	for (const keyA of keysA) {
+		if (!Object.prototype.hasOwnProperty.call(b, keyA)) return false;
+		if (
+			!deepEqualInternal(
+				(a as Record<string, unknown>)[keyA],
+				(b as Record<string, unknown>)[keyA],
+				keyA,
+				comparator,
+			)
+		)
+			return false;
 	}
 
 	return true;

@@ -11,12 +11,12 @@ const vscode = acquireVsCodeApi();
 
 function main() {
 	let view: RepovisWebview | undefined;
-	const getElement = <T extends HTMLElement = HTMLElement>(id: string): T => {
+	const getElement = (id: string) => {
 		const element = document.getElementById(id);
 		if (!element) {
 			throw new Error(`Element with id "${id}" not found`);
 		}
-		return element as T;
+		return element;
 	};
 
 	const svg = getElement("diagram");
@@ -25,10 +25,10 @@ function main() {
 	const sidebar = getElement("sidebar");
 	const openSidebarBtn = getElement("open-sidebar");
 	const closeSidebarBtn = getElement("close-sidebar");
-	const includeInput = getElement<HTMLInputElement>("include");
-	const excludeInput = getElement<HTMLInputElement>("exclude");
-	const fileTreeContainer = getElement<HTMLDivElement>("file-tree");
-	const extensionFilterContainer = getElement<HTMLDivElement>("extension-filter");
+	const includeInput = getElement("include") as HTMLInputElement;
+	const excludeInput = getElement("exclude") as HTMLInputElement;
+	const fileTreeContainer = getElement("file-tree") as HTMLDivElement;
+	const extensionFilterContainer = getElement("extension-filter") as HTMLDivElement;
 
 	// State for file tree checkboxes
 	const excludedPaths = new Set<string>();
@@ -63,45 +63,43 @@ function main() {
 	const fileTree = new FileTree(excludedPaths, updateClientFilters);
 	const extensionFilter = new ExtensionFilter(excludedExtensions, updateClientFilters);
 
-	addEventListener("message", (event: MessageEvent) => {
-		const message: RepovisMessage = event.data;
+	addEventListener("message", (event: MessageEvent<RepovisMessage>) => {
+		const message = event.data;
 
-		if (message.type === "set") {
-			if (message.settings) {
-				includeInput.value = message.settings.include;
-				excludeInput.value = message.settings.exclude;
-			}
+		if (message.settings) {
+			includeInput.value = message.settings.include;
+			excludeInput.value = message.settings.exclude;
+		}
 
-			if (message.codebase) {
-				rawCodebase = message.codebase;
-				fileTree.render(message.codebase, fileTreeContainer);
-				extensionFilter.render(message.codebase, extensionFilterContainer);
-			}
+		if (message.codebase) {
+			rawCodebase = message.codebase;
+			fileTree.render(message.codebase, fileTreeContainer);
+			extensionFilter.render(message.codebase, extensionFilterContainer);
+		}
 
-			// Apply client-side filtering
-			let filteredCodebase = rawCodebase;
-			if (filteredCodebase) {
-				filteredCodebase = filterFileTree(
-					filteredCodebase,
-					createFilterPredicate(excludedPaths, excludedExtensions),
-					filteredCodebase.name,
-				);
-			}
-
-			if (view) {
-				view.update(message.settings, filteredCodebase);
-				return;
-			}
-
-			if (message.settings && filteredCodebase) {
-				view = new RepovisWebview(message.settings, filteredCodebase);
-				return;
-			}
-
-			throw new Error(
-				"Codebase Visualizer: View is not set, and either settings or codebase are not provided",
+		// Apply client-side filtering
+		let filteredCodebase = rawCodebase;
+		if (filteredCodebase) {
+			filteredCodebase = filterFileTree(
+				filteredCodebase,
+				createFilterPredicate(excludedPaths, excludedExtensions),
+				filteredCodebase.name,
 			);
 		}
+
+		if (view) {
+			view.update(message.settings, filteredCodebase);
+			return;
+		}
+
+		if (message.settings && filteredCodebase) {
+			view = new RepovisWebview(message.settings, filteredCodebase);
+			return;
+		}
+
+		throw new Error(
+			"Codebase Visualizer: View is not set, and either settings or codebase are not provided",
+		);
 	});
 
 	// just pass events through as webview messages

@@ -11,15 +11,21 @@ export function filterFileTree<T extends AnyFile>(
 	path = "",
 ): T {
 	// Can't use path module in webview.
-	const joinPath = (path: string, c: AnyFile) => (path ? `${path}/${c.name}` : c.name);
+	const joinPath = (path: string, c: AnyFile) => {
+		return path ? `${path}/${c.name}` : c.name;
+	};
 
-	if (root.type == FileType.Directory) {
+	if (root.type === FileType.Directory) {
 		return {
 			...root,
 			children: root.children
 				// map first so condition is run on already filtered directories
-				.map((child) => filterFileTree(child, condition, joinPath(path, child)))
-				.filter((child) => condition(child, joinPath(path, child))),
+				.map((child) => {
+					return filterFileTree(child, condition, joinPath(path, child));
+				})
+				.filter((child) => {
+					return condition(child, joinPath(path, child));
+				}),
 		};
 	} else {
 		return root;

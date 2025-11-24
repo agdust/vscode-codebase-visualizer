@@ -11,8 +11,7 @@ export function throttle(
 	let previous = 0;
 	const { leading = true, trailing = true } = options;
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	return function (this: any, ...args: any[]) {
+	return function (this: unknown, ...args: unknown[]): void {
 		const now = Date.now();
 		if (!previous && !leading) previous = now;
 		const remaining = wait - (now - previous);

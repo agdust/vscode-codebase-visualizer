@@ -68,7 +68,7 @@ export default class RepovisWebview {
 	};
 
 	// Parts of the d3 diagram
-	diagram: Selection<SVGSVGElement>;
+	diagram: d3.Selection<SVGSVGElement, unknown, HTMLElement, unknown>;
 	svgElement: SVGSVGElement;
 	defs: Selection<SVGDefsElement>;
 	zoomWindow: Selection<SVGGElement>;
@@ -120,7 +120,7 @@ export default class RepovisWebview {
 		// Add event listeners
 		this.throttledUpdate = throttle(
 			() => {
-				return this.update();
+				this.update();
 			},
 			150,
 			{ trailing: true },
@@ -133,8 +133,8 @@ export default class RepovisWebview {
 		];
 		const zoom = d3
 			.zoom<SVGSVGElement, unknown>()
-			.on("zoom", (e) => {
-				return this.onZoom(e);
+			.on("zoom", (e: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+				this.onZoom(e);
 			})
 			.extent(extent)
 			.scaleExtent([1, Infinity])
@@ -144,11 +144,11 @@ export default class RepovisWebview {
 			.call(zoom)
 			.on("dblclick.zoom", null) // double-click zoom interferes with clicking on files and folders
 			.attr("tabindex", 0) // make svg focusable so it can receive keydown events
-			.on("keydown", (event) => {
+			.on("keydown", (event: KeyboardEvent) => {
 				const key = event.key;
 				if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
-					const dx = key === "ArrowRight" ? -1 : key === "ArrowLeft" ? +1 : 0;
-					const dy = key === "ArrowDown" ? -1 : key === "ArrowUp" ? +1 : 0;
+					const dx = key === "ArrowRight" ? -1 : key === "ArrowLeft" ? 1 : 0;
+					const dy = key === "ArrowDown" ? -1 : key === "ArrowUp" ? 1 : 0;
 					const amount = this.s.zoom.panKeyAmount / this.transform.k;
 					zoom.translateBy(this.diagram, dx * amount, dy * amount);
 				} else if (event.ctrlKey && ["-", "="].includes(key)) {
@@ -159,7 +159,7 @@ export default class RepovisWebview {
 			});
 
 		d3.select(document.body).on("resize", () => {
-			return this.onResize();
+			this.onResize();
 		});
 
 		[this.width, this.height] = getRect(this.svgElement);
@@ -206,10 +206,9 @@ export default class RepovisWebview {
 				// only give empty folders a size. Empty folders are normally
 				return d.children.length === 0 ? 1 : 0; // filtered, but root can be empty.
 			}
-			if (d.type === FileType.SymbolicLink) {
-				return this.s.file.minSize; // render all symbolic links as the minimum size.
-			}
-			throw new Error(`Unknown type`); // shouldn't be possible, other types won't be sent.
+
+			// render all symbolic links as the minimum size.
+			return this.s.file.minSize;
 		});
 
 		// Sort by descending size for layout purposes
@@ -226,7 +225,7 @@ export default class RepovisWebview {
 		// Calculate unique key for each data. Use `type:path/to/file` so that types is treated as creating a new node
 		// rather than update the existing one, which simplifies the logic.
 		const keyFunc = (d: Node) => {
-			return `${d.data.type}:${this.filePath(d)}`;
+			return `${d.data.type.toString()}:${this.filePath(d)}`;
 		};
 
 		const data = packLayout.descendants().filter((d) => {
@@ -334,13 +333,15 @@ export default class RepovisWebview {
 					all.on("dblclick", (_, d) => {
 						if (d.data.type === FileType.Directory) {
 							this.emit({ type: "reveal", file: this.filePath(d) });
-						} else if (d.data.type === FileType.File) {
+							return;
+						}
+						if (d.data.type === FileType.File) {
 							this.emit({ type: "open", file: this.filePath(d) });
-						} else if (d.data.type === FileType.SymbolicLink) {
-							const jumpTo = this.pathMap.get(d.data.resolved);
-							if (jumpTo) {
-								this.emphasizeFile(jumpTo);
-							}
+							return;
+						}
+						const jumpTo = this.pathMap.get(d.data.resolved);
+						if (jumpTo) {
+							this.emphasizeFile(jumpTo);
 						}
 					});
 
@@ -368,7 +369,7 @@ export default class RepovisWebview {
 		const changed = fullRerender ? all : all.filter(".new");
 
 		changed.attr("transform", (d) => {
-			return `translate(${d.x},${d.y})`;
+			return `translate(${d.x.toString()},${d.y.toString()})`;
 		});
 
 		changed

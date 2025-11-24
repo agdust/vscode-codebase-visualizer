@@ -50,14 +50,16 @@ export class Visualization {
 		this.codebase = codebase;
 		this.webviewPanel = this.createWebviewPanel();
 
-		this.init();
+		this.init().catch((error: unknown) => {
+			console.error(error);
+		});
 	}
 
 	private async init() {
 		// Await until we get the ready message from the webview
 		await new Promise((resolve, reject) => {
 			const disposable = this.webviewPanel.webview.onDidReceiveMessage(
-				async (message: RepovisWebviewMessage) => {
+				(message: RepovisWebviewMessage) => {
 					if (message.type === "ready") {
 						disposable.dispose();
 						resolve(undefined);
@@ -77,22 +79,27 @@ export class Visualization {
 				if (message.type === "ready") {
 					// we can get ready again if the webview closes and reopens.
 					await this.sendSet({ codebase: true, settings: true });
-				} else if (message.type === "open") {
+					return;
+				}
+				if (message.type === "open") {
 					// NOTE: we could do these and Command URIs inside the webview instead. That might be simpler
 					await vscode.commands.executeCommand("vscode.open", this.getUri(message.file));
-				} else if (message.type === "reveal") {
+					return;
+				}
+				if (message.type === "reveal") {
 					await vscode.commands.executeCommand(
 						"revealInExplorer",
 						this.getUri(message.file),
 					);
-				} else if (message.type === "update-settings") {
+					return;
+				}
+				if (message.type === "update-settings") {
 					if (message.settings.include !== undefined) {
 						this.settings.include = message.settings.include;
 					}
 					if (message.settings.exclude !== undefined) {
 						this.settings.exclude = message.settings.exclude;
 					}
-
 					if (
 						message.settings.include !== undefined ||
 						message.settings.exclude !== undefined
@@ -100,7 +107,7 @@ export class Visualization {
 						await this.updateFileList();
 						await this.sendSet({ codebase: true });
 						if (this.onFilesChangeCallback) {
-							this.update(this.onFilesChangeCallback);
+							await this.update(this.onFilesChangeCallback);
 						}
 					}
 				}
@@ -162,13 +169,13 @@ export class Visualization {
 	 *
 	 * You can pass `{immediate: true}` if you want it to trigger immediately as well.
 	 */
-	onFilesChange(
+	async onFilesChange(
 		func: (visState: VisualizationState) => Promise<void>,
 		options?: { immediate?: boolean },
-	): void {
+	): Promise<void> {
 		this.onFilesChangeCallback = func;
 		if (options?.immediate ?? false) {
-			this.update(this.onFilesChangeCallback);
+			await this.update(this.onFilesChangeCallback);
 		}
 	}
 
@@ -236,7 +243,7 @@ export class Visualization {
 		const callback = async () => {
 			await this.sendSet({ codebase: true });
 			if (this.onFilesChangeCallback) {
-				this.update(this.onFilesChangeCallback);
+				await this.update(this.onFilesChangeCallback);
 			}
 		};
 
@@ -255,14 +262,14 @@ export class Visualization {
 		this.fsWatcher.onDidCreate(async (uri) => {
 			await this.updateFileList();
 			if (inFiles(uri)) {
-				callback(); // check if in new file list
+				await callback(); // check if in new file list
 			}
 		});
 		this.fsWatcher.onDidDelete(async (uri) => {
 			if (inFiles(uri)) {
 				// check if in original file list
 				await this.updateFileList();
-				callback();
+				await callback();
 			}
 		});
 	}

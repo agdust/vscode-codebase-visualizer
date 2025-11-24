@@ -36,7 +36,7 @@ export default tseslint.config(
 			'@typescript-eslint/no-explicit-any': 'error',
 			'@typescript-eslint/explicit-module-boundary-types': 'warn',
 			'@typescript-eslint/no-non-null-assertion': 'error',
-			'arrow-body-style': ["error", 'as-needed']
+			'arrow-body-style': ["error", 'always']
 		},
 	}
 );

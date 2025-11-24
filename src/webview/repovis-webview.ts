@@ -8,7 +8,9 @@ import * as d3 from "d3";
 //         - https://github.com/microsoft/vscode/issues/156224
 //         - https://github.com/gitkraken/vscode-gitlens/blob/main/package.json
 // - Or 'vanilla-context-menu' has types
-const d3ContextMenu = require("d3-context-menu"); // eslint-disable-line
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const d3ContextMenu = require("d3-context-menu");
 import "d3-context-menu/css/d3-context-menu.css"; // manually require the CSS
 
 import tippy, { followCursor, Instance } from "tippy.js";
@@ -118,19 +120,25 @@ export default class RepovisWebview {
 
 		// SVG taken from Font Awesome 6.2.1 (https://fontawesome.com) "fa-share" icon, with some positioning tweaks
 		this.defs.html(`
-            <svg id="symlink-icon" viewBox="0 -480 512 448">
-                <path d="
-                    M 307 -34.8 c -11.5 -5.1 -19 -16.6 -19 -29.2 v -64 H 176 C 78.8 -128 0 -206.8 0 -304 C 0 -417.3 81.5
-                    -467.9 100.2 -478.1 c 2.5 -1.4 5.3 -1.9 8.1 -1.9 c 10.9 0 19.7 8.9 19.7 19.7 c 0 7.5 -4.3 14.4 -9.8
-                    19.5 C 108.8 -431.9 96 -414.4 96 -384 c 0 53 43 96 96 96 h 96 v -64 c 0 -12.6 7.4 -24.1 19 -29.2 s
-                    25 -3 34.4 5.4 l 160 144 c 6.7 6.1 10.6 14.7 10.6 23.8 s -3.8 17.7 -10.6 23.8 l -160 144 c -9.4 8.5
-                    -22.9 10.6 -34.4 5.4 z
-                "/>
-            </svg>
-        `);
+				<svg id="symlink-icon" viewBox="0 -480 512 448">
+						<path d="
+								M 307 -34.8 c -11.5 -5.1 -19 -16.6 -19 -29.2 v -64 H 176 C 78.8 -128 0 -206.8 0 -304 C 0 -417.3 81.5
+								-467.9 100.2 -478.1 c 2.5 -1.4 5.3 -1.9 8.1 -1.9 c 10.9 0 19.7 8.9 19.7 19.7 c 0 7.5 -4.3 14.4 -9.8
+								19.5 C 108.8 -431.9 96 -414.4 96 -384 c 0 53 43 96 96 96 h 96 v -64 c 0 -12.6 7.4 -24.1 19 -29.2 s
+								25 -3 34.4 5.4 l 160 144 c 6.7 6.1 10.6 14.7 10.6 23.8 s -3.8 17.7 -10.6 23.8 l -160 144 c -9.4 8.5
+								-22.9 10.6 -34.4 5.4 z
+						"/>
+				</svg>
+		`);
 
 		// Add event listeners
-		this.throttledUpdate = throttle(() => this.update(), 150, { trailing: true });
+		this.throttledUpdate = throttle(
+			() => {
+				return this.update();
+			},
+			150,
+			{ trailing: true },
+		);
 
 		const [x, y, width, height] = this.getViewbox();
 		const extent: [Point, Point] = [
@@ -139,7 +147,9 @@ export default class RepovisWebview {
 		];
 		const zoom = d3
 			.zoom<SVGSVGElement, unknown>()
-			.on("zoom", (e) => this.onZoom(e))
+			.on("zoom", (e) => {
+				return this.onZoom(e);
+			})
 			.extent(extent)
 			.scaleExtent([1, Infinity])
 			.translateExtent(extent);
@@ -162,7 +172,9 @@ export default class RepovisWebview {
 				}
 			});
 
-		d3.select(window).on("resize", () => this.onResize());
+		d3.select(document.body).on("resize", () => {
+			return this.onResize();
+		});
 
 		[this.width, this.height] = getRect(this.svgElement);
 
@@ -199,26 +211,29 @@ export default class RepovisWebview {
 		// rename to filesChanged
 		const filteredCodebase = this.filteredCodebase();
 
-		const root = d3.hierarchy<AnyFile>(filteredCodebase, (f) =>
-			f.type == FileType.Directory ? f.children : undefined,
-		);
+		const root = d3.hierarchy<AnyFile>(filteredCodebase, (f) => {
+			return f.type == FileType.Directory ? f.children : undefined;
+		});
 
 		root.sum((d) => {
 			// Compute size of files and folders.
 			if (d.type == FileType.File) {
 				return Math.min(this.s.file.maxSize, Math.max(d.size, this.s.file.minSize));
-			} else if (d.type == FileType.Directory) {
+			}
+			if (d.type == FileType.Directory) {
 				// only give empty folders a size. Empty folders are normally
 				return d.children.length == 0 ? 1 : 0; // filtered, but root can be empty.
-			} else if (d.type == FileType.SymbolicLink) {
-				return this.s.file.minSize; // render all symbolic links as the minimum size.
-			} else {
-				throw new Error(`Unknown type`); // shouldn't be possible, other types won't be sent.
 			}
+			if (d.type == FileType.SymbolicLink) {
+				return this.s.file.minSize; // render all symbolic links as the minimum size.
+			}
+			throw new Error(`Unknown type`); // shouldn't be possible, other types won't be sent.
 		});
 
 		// Sort by descending size for layout purposes
-		root.sort((a, b) => d3.descending(a.value, b.value));
+		root.sort((a, b) => {
+			return d3.descending(a.value, b.value);
+		});
 
 		// Use d3 to calculate the circle packing layout
 		const packLayout = d3
@@ -229,11 +244,13 @@ export default class RepovisWebview {
 		const colorScale = this.getColorScale(packLayout);
 		// Calculate unique key for each data. Use `type:path/to/file` so that types is treated as creating a new node
 		// rather than update the existing one, which simplifies the logic.
-		const keyFunc = (d: Node) => `${d.data.type}:${this.filePath(d)}`;
+		const keyFunc = (d: Node) => {
+			return `${d.data.type}:${this.filePath(d)}`;
+		};
 
-		const data = packLayout
-			.descendants()
-			.filter((d) => !d.parent || !this.shouldHideContents(d.parent));
+		const data = packLayout.descendants().filter((d) => {
+			return !d.parent || !this.shouldHideContents(d.parent);
+		});
 
 		const all = this.fileLayer
 			.selectAll<SVGGElement, Node>(".file, .directory")
@@ -242,10 +259,18 @@ export default class RepovisWebview {
 				(enter) => {
 					const all = enter
 						.append("g")
-						.attr("data-file", (d) => this.filePath(d))
-						.classed("file", (d) => this.resolvedType(d) == FileType.File)
-						.classed("directory", (d) => this.resolvedType(d) == FileType.Directory)
-						.classed("symlink", (d) => d.data.type == FileType.SymbolicLink)
+						.attr("data-file", (d) => {
+							return this.filePath(d);
+						})
+						.classed("file", (d) => {
+							return this.resolvedType(d) == FileType.File;
+						})
+						.classed("directory", (d) => {
+							return this.resolvedType(d) == FileType.Directory;
+						})
+						.classed("symlink", (d) => {
+							return d.data.type == FileType.SymbolicLink;
+						})
 						.classed("new", true); // We'll use this to reselect newly added nodes later.
 
 					// Draw the circles for each file and directory. Use path instead of circle so we can use textPath
@@ -253,25 +278,33 @@ export default class RepovisWebview {
 					all
 						.append("path")
 						.classed("circle", true)
-						.attr("id", (d) => `file-${this.filePath(d)}`);
+						.attr("id", (d) => {
+							return `file-${this.filePath(d)}`;
+						});
 
-					const files = all.filter((d) => this.resolvedType(d) == FileType.File);
-					const directories = all.filter(
-						(d) => this.resolvedType(d) == FileType.Directory,
-					);
-					const symlinks = all.filter((d) => d.data.type == FileType.SymbolicLink); // overlaps files/directories
+					const files = all.filter((d) => {
+						return this.resolvedType(d) == FileType.File;
+					});
+					const directories = all.filter((d) => {
+						return this.resolvedType(d) == FileType.Directory;
+					});
+					const symlinks = all.filter((d) => {
+						return d.data.type == FileType.SymbolicLink;
+					}); // overlaps files/directories
 
 					// Add labels
 					files
-						.filter((d) => d.data.type != FileType.SymbolicLink)
+						.filter((d) => {
+							return d.data.type != FileType.SymbolicLink;
+						})
 						.append("text")
 						.append("tspan")
 						.classed("label", true)
 						.attr("x", 0)
 						.attr("y", 0)
-						.attr("font-size", (d) =>
-							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin),
-						);
+						.attr("font-size", (d) => {
+							return Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin);
+						});
 
 					// Add a folder name at the top. Add a "background" path behind the text to contrast with the circle
 					// outline. We'll set the path in update after we've created the label so we can get the computed
@@ -283,11 +316,13 @@ export default class RepovisWebview {
 						.append("text")
 						.append("textPath")
 						.classed("label", true)
-						.attr("href", (d) => `#file-${encodeURIComponent(this.filePath(d))}`)
+						.attr("href", (d) => {
+							return `#file-${encodeURIComponent(this.filePath(d))}`;
+						})
 						.attr("startOffset", "50%")
-						.attr("font-size", (d) =>
-							Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin),
-						);
+						.attr("font-size", (d) => {
+							return Math.max(this.s.label.fontMax - d.depth, this.s.label.fontMin);
+						});
 
 					directories
 						.append("text")
@@ -295,7 +330,9 @@ export default class RepovisWebview {
 						.classed("contents-hidden-label", true)
 						.attr("x", 0)
 						.attr("y", 0)
-						.attr("font-size", (d) => this.calcPixelLength(d.r)) // wait... scaling is after this...
+						.attr("font-size", (d) => {
+							return this.calcPixelLength(d.r);
+						}) // wait... scaling is after this...
 						.text("...");
 
 					const iconSize = this.s.file.minSize * 1.5;
@@ -328,11 +365,15 @@ export default class RepovisWebview {
 						})
 						.on(
 							"contextmenu",
-							d3ContextMenu((d: Node) => this.contextMenu(d)),
+							d3ContextMenu((d: Node) => {
+								return this.contextMenu(d);
+							}),
 						);
 
 					all
-						.filter((d) => d.depth > 0) // don't tooltip to root folder
+						.filter((d) => {
+							return d.depth > 0;
+						}) // don't tooltip to root folder
 						.each((d, i, nodes) => {
 							const node = nodes[i];
 							if (node) {
@@ -348,25 +389,34 @@ export default class RepovisWebview {
 				},
 				(update) =>
 					// TODO transitions
-					update.classed("new", false),
-				(exit) =>
-					exit
+					{
+						return update.classed("new", false);
+					},
+				(exit) => {
+					return exit
 						.each((node) => {
 							if (node) {
 								(node as unknown as { _tippy?: Instance })._tippy?.destroy();
 							}
 						}) // destroy any tippy instances
-						.remove(),
+						.remove();
+				},
 			);
 
 		all
-			.classed("contents-hidden", (d) => this.shouldHideContents(d))
-			.classed("labels-hidden", (d) => this.shouldHideLabels(d));
+			.classed("contents-hidden", (d) => {
+				return this.shouldHideContents(d);
+			})
+			.classed("labels-hidden", (d) => {
+				return this.shouldHideLabels(d);
+			});
 
 		// we only need to recalculate these for new elements unless the file structure changed (not just zoom)
 		const changed = fullRerender ? all : all.filter(".new");
 
-		changed.attr("transform", (d) => `translate(${d.x},${d.y})`);
+		changed.attr("transform", (d) => {
+			return `translate(${d.x},${d.y})`;
+		});
 
 		changed
 			.select("path.circle")
@@ -379,14 +429,18 @@ export default class RepovisWebview {
 				path.arc(0, 0, d.r, Math.PI / 2, (5 * Math.PI) / 2);
 				return path.toString();
 			})
-			.attr("fill", (d) => colorScale(d.data));
+			.attr("fill", (d) => {
+				return colorScale(d.data);
+			});
 
 		const files = changed.filter(".file");
 		const directories = changed.filter(".directory");
 
 		files
 			.select<SVGTSpanElement>(".label")
-			.text((d) => d.data.name)
+			.text((d) => {
+				return d.data.name;
+			})
 			.each((d, i, nodes) => {
 				const node = nodes[i];
 				if (node) {
@@ -396,7 +450,9 @@ export default class RepovisWebview {
 
 		const directoryLabels = directories
 			.select<SVGTextPathElement>(".label")
-			.text((d) => d.data.name)
+			.text((d) => {
+				return d.data.name;
+			})
 			.each((d, i, nodes) => {
 				const node = nodes[i];
 				if (node) {
@@ -424,9 +480,9 @@ export default class RepovisWebview {
 		const newPathMap = new Map<string, Node>();
 		packLayout.each((d) => {
 			// get d or the first ancestor that is visible
-			const firstVisible = d
-				.ancestors()
-				.find((p) => !p.parent || !this.shouldHideContents(p.parent));
+			const firstVisible = d.ancestors().find((p) => {
+				return !p.parent || !this.shouldHideContents(p.parent);
+			});
 			if (firstVisible) {
 				newPathMap.set(this.filePath(d), firstVisible);
 			}
@@ -437,7 +493,9 @@ export default class RepovisWebview {
 	filteredCodebase(): Directory {
 		return filterFileTree(
 			this.codebase,
-			(f) => !(f.type == FileType.Directory && f.children.length == 0), // filter empty dirs
+			(f) => {
+				return !(f.type == FileType.Directory && f.children.length == 0);
+			}, // filter empty dirs
 		);
 	}
 
@@ -447,14 +505,18 @@ export default class RepovisWebview {
 			new Set(
 				nodes
 					.descendants()
-					.filter((n) => n.data.type != FileType.Directory)
-					.map((n) =>
-						getExtension(
+					.filter((n) => {
+						return n.data.type != FileType.Directory;
+					})
+					.map((n) => {
+						return getExtension(
 							n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name,
-						),
-					),
+						);
+					}),
 			),
-		).filter((ext) => !presetColors[ext]);
+		).filter((ext) => {
+			return !presetColors[ext];
+		});
 		// interpolateRainbow loops around so the first and last entries are the same, so +1 and slice off end to make
 		// all colors unique. Also, quantize requires n > 1, so the +1 also fixes that.
 		const range = d3.quantize(d3.interpolateRainbow, domain.length + 1).slice(0, -1);
@@ -478,7 +540,9 @@ export default class RepovisWebview {
 			.ancestors()
 			.reverse()
 			.slice(1)
-			.map((d) => d.data.name);
+			.map((d) => {
+				return d.data.name;
+			});
 		// Root dir will be "/". Since these aren't absolute paths and all other paths don't start with /, "" would be
 		// more natural, but "" is already used for "out-of-screen" targets. root won't show up in any connections
 		// or tooltips anyway, so this is only internal.
@@ -546,15 +610,18 @@ export default class RepovisWebview {
 			fileType === "directory"
 				? this.settings.contextMenuDirectory
 				: this.settings.contextMenuFile;
-		return items.map((item, i) => ({
-			title: item.title,
-			action: (d: Node) =>
-				this.emit({
-					type: "context-menu",
-					action: `${fileType}-${i}`,
-					file: this.filePath(d),
-				}),
-		}));
+		return items.map((item, i) => {
+			return {
+				title: item.title,
+				action: (d: Node) => {
+					return this.emit({
+						type: "context-menu",
+						action: `${fileType}-${i}`,
+						file: this.filePath(d),
+					});
+				},
+			};
+		});
 	}
 
 	/** Jump the view to a file, and make it flash */

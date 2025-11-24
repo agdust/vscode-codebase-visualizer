@@ -1,7 +1,5 @@
 import * as vscode from "vscode";
 import { Uri, Webview, WebviewPanel, FileSystemWatcher, workspace } from "vscode";
-import * as path from "path";
-import * as fs from "fs";
 
 import {
 	WebviewVisualizationSettings,
@@ -13,6 +11,7 @@ import * as fileHelper from "./util/fileHelper";
 import { defaultSettings } from "./defaultSettings";
 import { VisualizationSettings } from "./VisualizationSettings";
 import { shallowCompare } from "./util/shallowCompare";
+import { getWebviewHtml } from "./getWebviewHtml";
 
 /**
  * A mutable "view" on a Visualization that can be used to update it.
@@ -248,14 +247,18 @@ export class Visualization {
 		const webviewSettings: WebviewVisualizationSettings = {
 			include: this.settings.include,
 			exclude: this.settings.exclude,
-			contextMenuFile: this.settings.contextMenuFile.map((item, i) => ({
-				title: item.title,
-				action: `file-${i}`,
-			})),
-			contextMenuDirectory: this.settings.contextMenuDirectory.map((item, i) => ({
-				title: item.title,
-				action: `directory-${i}`,
-			})),
+			contextMenuFile: this.settings.contextMenuFile.map((item, i) => {
+				return {
+					title: item.title,
+					action: `file-${i}`,
+				};
+			}),
+			contextMenuDirectory: this.settings.contextMenuDirectory.map((item, i) => {
+				return {
+					title: item.title,
+					action: `directory-${i}`,
+				};
+			}),
 		};
 		return webviewSettings;
 	}
@@ -276,7 +279,11 @@ export class Visualization {
 			}
 		};
 
-		const inFiles = (uri: Uri) => this.files.some((u) => u.fsPath == uri.fsPath);
+		const inFiles = (uri: Uri) => {
+			return this.files.some((u) => {
+				return u.fsPath == uri.fsPath;
+			});
+		};
 
 		this.fsWatcher.onDidChange(async (uri) => {
 			if (inFiles(uri)) {
@@ -302,7 +309,7 @@ export class Visualization {
 	private createWebviewPanel(): WebviewPanel {
 		// Create and show panel
 		const panel = vscode.window.createWebviewPanel(
-			"codeBaseRelationshipVisualizer",
+			"repositoryVisualizer",
 			this.settings.title,
 			vscode.ViewColumn.One,
 			{
@@ -324,12 +331,7 @@ export class Visualization {
 			Uri.joinPath(extPath, "dist", "webview", "webview.js"),
 		);
 
-		const htmlPath = path.join(this.context.extensionPath, "src", "webview.html");
-		const html = fs.readFileSync(htmlPath, {
-			encoding: "utf-8",
-		});
-
-		return html.replace("{{scriptUri}}", scriptUri.toString());
+		return getWebviewHtml(scriptUri.toString());
 	}
 
 	private async sendSet(send: { codebase?: boolean; settings?: boolean }) {

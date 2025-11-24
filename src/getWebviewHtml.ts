@@ -1,4 +1,5 @@
-<!doctype html>
+export const getWebviewHtml = (scriptUri: string): string => {
+	return `<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
@@ -65,6 +66,7 @@
 		<script>
 			var exports = {};
 		</script>
-		<script src="{{scriptUri}}"></script>
+		<script src="${scriptUri}"></script>
 	</body>
-</html>
+</html>`;
+};

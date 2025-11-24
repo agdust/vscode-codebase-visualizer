@@ -2,7 +2,7 @@ import RepovisWebview from "./repovis-webview";
 import { RepovisMessage, RepovisWebviewMessage } from "../types";
 import { FileTree } from "./FileTree";
 
-import "./styles.css";
+import "./webview.css";
 
 const vscode = acquireVsCodeApi();
 
@@ -89,7 +89,7 @@ function main() {
 		sidebar.classList.toggle("collapsed");
 		// Trigger resize after transition so diagram updates
 		setTimeout(() => {
-			window.dispatchEvent(new Event("resize"));
+			document.body.dispatchEvent(new Event("resize"));
 		}, 250); // Match CSS transition time
 	};
 

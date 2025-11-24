@@ -7,7 +7,7 @@ export default defineConfig({
 		outDir: "dist/webview",
 		rollupOptions: {
 			input: {
-				webview: path.resolve(__dirname, "src/webview/index.ts"),
+				webview: path.resolve(__dirname, "src/webview/webview.ts"),
 			},
 			output: {
 				entryFileNames: "[name].js",

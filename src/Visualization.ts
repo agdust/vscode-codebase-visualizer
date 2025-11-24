@@ -58,7 +58,7 @@ export class Visualization {
 		await new Promise((resolve, reject) => {
 			const disposable = this.webviewPanel.webview.onDidReceiveMessage(
 				async (message: RepovisWebviewMessage) => {
-					if (message.type == "ready") {
+					if (message.type === "ready") {
 						disposable.dispose();
 						resolve(undefined);
 					} else {
@@ -102,17 +102,6 @@ export class Visualization {
 						if (this.onFilesChangeCallback) {
 							this.update(this.onFilesChangeCallback);
 						}
-					}
-				} else if (message.type == "context-menu") {
-					const [menu, i] = message.action.split("-");
-					const uri = this.getUri(message.file);
-					const index = Number(i);
-					const menuItem =
-						menu === "file"
-							? this.settings.contextMenuFile[index]
-							: this.settings.contextMenuDirectory[index];
-					if (menuItem) {
-						menuItem.action(uri, this);
 					}
 				}
 			},
@@ -223,23 +212,7 @@ export class Visualization {
 	private normalizeSettings(
 		settings: Partial<VisualizationSettings>,
 	): VisualizationSettings {
-		const newSettings = { ...defaultSettings, ...settings };
-
-		// prepend defaults to menu items (if they are specified)
-		if (settings.contextMenuFile) {
-			newSettings.contextMenuFile = [
-				...defaultSettings.contextMenuFile,
-				...settings.contextMenuFile,
-			];
-		}
-		if (settings.contextMenuDirectory) {
-			newSettings.contextMenuDirectory = [
-				...defaultSettings.contextMenuDirectory,
-				...settings.contextMenuDirectory,
-			];
-		}
-
-		return newSettings;
+		return { ...defaultSettings, ...settings };
 	}
 
 	/** Returns a complete settings object with defaults filled in an normalized a bit.  */
@@ -247,18 +220,6 @@ export class Visualization {
 		const webviewSettings: WebviewVisualizationSettings = {
 			include: this.settings.include,
 			exclude: this.settings.exclude,
-			contextMenuFile: this.settings.contextMenuFile.map((item, i) => {
-				return {
-					title: item.title,
-					action: `file-${i}`,
-				};
-			}),
-			contextMenuDirectory: this.settings.contextMenuDirectory.map((item, i) => {
-				return {
-					title: item.title,
-					action: `directory-${i}`,
-				};
-			}),
 		};
 		return webviewSettings;
 	}

@@ -26,16 +26,4 @@ export interface VisualizationSettings {
 	 * Can be overridden by the user via the controls.
 	 */
 	include: string;
-
-	/**
-	 * Context menu options that will show for files and folders in addition to the default ones. Each `ContextMenuItem`
-	 * contains a title and a callback that will be called with the Uri of the selected file or folder.
-	 */
-	contextMenuFile: ContextMenuItem[];
-	contextMenuDirectory: ContextMenuItem[];
 }
-
-export type ContextMenuItem = {
-	title: string;
-	action: (uri: Uri, vis: Visualization) => void;
-};

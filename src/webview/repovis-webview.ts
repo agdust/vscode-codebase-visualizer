@@ -1,21 +1,5 @@
 import * as d3 from "d3";
 
-// d3-context-menu lacks types, so just manually requiring. This is working, but should consider better options:
-// - VSCode built-in menu configuration
-//     - Webview context menu support is new and zero documentation on how to get it working. See
-//         - https://code.visualstudio.com/api/references/contribution-points#contributes.views
-//         - https://github.com/microsoft/vscode/pull/154524
-//         - https://github.com/microsoft/vscode/issues/156224
-//         - https://github.com/gitkraken/vscode-gitlens/blob/main/package.json
-// - Or 'vanilla-context-menu' has types
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const d3ContextMenu = require("d3-context-menu");
-import "d3-context-menu/css/d3-context-menu.css"; // manually require the CSS
-
-import tippy, { followCursor, Instance } from "tippy.js";
-import "tippy.js/dist/tippy.css"; // optional for styling
-
 import {
 	AnyFile,
 	FileType,
@@ -28,7 +12,7 @@ import { filterFileTree } from "../util/filterFileTree";
 import { throttle } from "../util/throttle";
 import { Point, Box } from "../util/geometry";
 import { ellipsisText, getRect } from "./rendering";
-import { presetColors } from "./colors";
+import { presetColors, unknownColor } from "./colors";
 
 type Node = d3.HierarchyCircularNode<AnyFile>;
 // Shortcut for d3.Selection
@@ -178,10 +162,6 @@ export default class RepovisWebview {
 
 		[this.width, this.height] = getRect(this.svgElement);
 
-		tippy.setDefaultProps({
-			plugins: [followCursor],
-		});
-
 		this.svgElement.focus(); // focus svg so keyboard shortcuts for zoom and pan work immediately
 
 		this.update(this.settings, this.codebase);
@@ -212,19 +192,19 @@ export default class RepovisWebview {
 		const filteredCodebase = this.filteredCodebase();
 
 		const root = d3.hierarchy<AnyFile>(filteredCodebase, (f) => {
-			return f.type == FileType.Directory ? f.children : undefined;
+			return f.type === FileType.Directory ? f.children : undefined;
 		});
 
 		root.sum((d) => {
 			// Compute size of files and folders.
-			if (d.type == FileType.File) {
+			if (d.type === FileType.File) {
 				return Math.min(this.s.file.maxSize, Math.max(d.size, this.s.file.minSize));
 			}
-			if (d.type == FileType.Directory) {
+			if (d.type === FileType.Directory) {
 				// only give empty folders a size. Empty folders are normally
 				return d.children.length == 0 ? 1 : 0; // filtered, but root can be empty.
 			}
-			if (d.type == FileType.SymbolicLink) {
+			if (d.type === FileType.SymbolicLink) {
 				return this.s.file.minSize; // render all symbolic links as the minimum size.
 			}
 			throw new Error(`Unknown type`); // shouldn't be possible, other types won't be sent.
@@ -241,7 +221,6 @@ export default class RepovisWebview {
 			.size([this.s.diagramSize, this.s.diagramSize])
 			.padding(this.s.file.padding)(root);
 
-		const colorScale = this.getColorScale(packLayout);
 		// Calculate unique key for each data. Use `type:path/to/file` so that types is treated as creating a new node
 		// rather than update the existing one, which simplifies the logic.
 		const keyFunc = (d: Node) => {
@@ -350,40 +329,18 @@ export default class RepovisWebview {
 						});
 
 					// Add event listeners.
-					all
-						.on("dblclick", (_, d) => {
-							if (d.data.type == FileType.Directory) {
-								this.emit({ type: "reveal", file: this.filePath(d) });
-							} else if (d.data.type == FileType.File) {
-								this.emit({ type: "open", file: this.filePath(d) });
-							} else if (d.data.type == FileType.SymbolicLink) {
-								const jumpTo = this.pathMap.get(d.data.resolved);
-								if (jumpTo) {
-									this.emphasizeFile(jumpTo);
-								}
+					all.on("dblclick", (_, d) => {
+						if (d.data.type == FileType.Directory) {
+							this.emit({ type: "reveal", file: this.filePath(d) });
+						} else if (d.data.type == FileType.File) {
+							this.emit({ type: "open", file: this.filePath(d) });
+						} else if (d.data.type == FileType.SymbolicLink) {
+							const jumpTo = this.pathMap.get(d.data.resolved);
+							if (jumpTo) {
+								this.emphasizeFile(jumpTo);
 							}
-						})
-						.on(
-							"contextmenu",
-							d3ContextMenu((d: Node) => {
-								return this.contextMenu(d);
-							}),
-						);
-
-					all
-						.filter((d) => {
-							return d.depth > 0;
-						}) // don't tooltip to root folder
-						.each((d, i, nodes) => {
-							const node = nodes[i];
-							if (node) {
-								tippy(node, {
-									content: this.filePath(d),
-									delay: [1000, 0], // [show, hide]
-									followCursor: true,
-								});
-							}
-						});
+						}
+					});
 
 					return all;
 				},
@@ -393,13 +350,7 @@ export default class RepovisWebview {
 						return update.classed("new", false);
 					},
 				(exit) => {
-					return exit
-						.each((node) => {
-							if (node) {
-								(node as unknown as { _tippy?: Instance })._tippy?.destroy();
-							}
-						}) // destroy any tippy instances
-						.remove();
+					return exit.remove();
 				},
 			);
 
@@ -428,13 +379,14 @@ export default class RepovisWebview {
 				const path = d3.path();
 				path.arc(0, 0, d.r, Math.PI / 2, (5 * Math.PI) / 2);
 				return path.toString();
-			})
-			.attr("fill", (d) => {
-				return colorScale(d.data);
 			});
 
 		const files = changed.filter(".file");
 		const directories = changed.filter(".directory");
+
+		files.attr("fill", (d) => {
+			return this.getItemColor(d.data);
+		});
 
 		files
 			.select<SVGTSpanElement>(".label")
@@ -499,44 +451,22 @@ export default class RepovisWebview {
 		);
 	}
 
-	/** Returns a function used to compute color from file extension */
-	getColorScale(nodes: Node): (d: AnyFile) => string | null {
-		const domain = Array.from(
-			new Set(
-				nodes
-					.descendants()
-					.filter((n) => {
-						return n.data.type != FileType.Directory;
-					})
-					.map((n) => {
-						return getExtension(
-							n.data.type == FileType.SymbolicLink ? n.data.resolved : n.data.name,
-						);
-					}),
-			),
-		).filter((ext) => {
-			return !presetColors[ext];
-		});
-		// interpolateRainbow loops around so the first and last entries are the same, so +1 and slice off end to make
-		// all colors unique. Also, quantize requires n > 1, so the +1 also fixes that.
-		const range = d3.quantize(d3.interpolateRainbow, domain.length + 1).slice(0, -1);
-		const colorScale = d3.scaleOrdinal(domain, range);
+	getItemColor(item: AnyFile): string {
+		if (item.type === FileType.Directory) {
+			return "transparent";
+		}
 
-		return (d: AnyFile) => {
-			if (d.type == FileType.Directory) {
-				return null;
-			}
-
-			const ext = getExtension(d.type == FileType.SymbolicLink ? d.resolved : d.name);
-			if (presetColors[ext]) {
-				return presetColors[ext];
-			}
-			return colorScale(ext);
-		};
+		const ext = getExtension(
+			item.type === FileType.SymbolicLink ? item.resolved : item.name,
+		);
+		if (presetColors[ext]) {
+			return presetColors[ext];
+		}
+		return unknownColor;
 	}
 
-	filePath(d: Node): string {
-		const ancestors = d
+	filePath(node: Node): string {
+		const ancestors = node
 			.ancestors()
 			.reverse()
 			.slice(1)
@@ -546,12 +476,12 @@ export default class RepovisWebview {
 		// Root dir will be "/". Since these aren't absolute paths and all other paths don't start with /, "" would be
 		// more natural, but "" is already used for "out-of-screen" targets. root won't show up in any connections
 		// or tooltips anyway, so this is only internal.
-		return ancestors.length == 0 ? "/" : ancestors.join("/");
+		return ancestors.length === 0 ? "/" : ancestors.join("/");
 	}
 
 	/** Returns the type of the file if its a regular file, or its linked file type if its a symlink. */
 	resolvedType(d: Node): typeof FileType.File | typeof FileType.Directory {
-		return d.data.type == FileType.SymbolicLink ? d.data.linkedType : d.data.type;
+		return d.data.type === FileType.SymbolicLink ? d.data.linkedType : d.data.type;
 	}
 
 	/** Convert svg viewport units to actual rendered pixel length  */
@@ -563,7 +493,7 @@ export default class RepovisWebview {
 
 	shouldHideContents(d: d3.HierarchyCircularNode<AnyFile>): boolean {
 		return (
-			d.data.type == FileType.Directory &&
+			d.data.type === FileType.Directory &&
 			this.calcPixelLength(d.r) <= this.s.zoom.hideContentsR
 		);
 	}
@@ -576,7 +506,7 @@ export default class RepovisWebview {
 		const oldK = this.transform.k;
 		this.transform = e.transform;
 		this.zoomWindow.attr("transform", this.transform.toString());
-		if (e.transform.k != oldK) {
+		if (e.transform.k !== oldK) {
 			// zoom also triggers for pan.
 			this.throttledUpdate();
 		}
@@ -602,26 +532,6 @@ export default class RepovisWebview {
 			this.settings = newSettings;
 		}
 		this.emit({ type: "update-settings", settings: settingsUpdate });
-	}
-
-	contextMenu(d: Node): { title: string; action: (d: Node) => void }[] {
-		const fileType = this.resolvedType(d) == FileType.Directory ? "directory" : "file";
-		const items =
-			fileType === "directory"
-				? this.settings.contextMenuDirectory
-				: this.settings.contextMenuFile;
-		return items.map((item, i) => {
-			return {
-				title: item.title,
-				action: (d: Node) => {
-					return this.emit({
-						type: "context-menu",
-						action: `${fileType}-${i}`,
-						file: this.filePath(d),
-					});
-				},
-			};
-		});
 	}
 
 	/** Jump the view to a file, and make it flash */

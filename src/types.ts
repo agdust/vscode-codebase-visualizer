@@ -44,11 +44,7 @@ export interface SymbolicLink extends BaseFile {
 export interface WebviewVisualizationSettings {
 	include: string;
 	exclude: string;
-	contextMenuFile: WebviewContextMenuItem[];
-	contextMenuDirectory: WebviewContextMenuItem[];
 }
-
-export type WebviewContextMenuItem = { title: string; action: string };
 
 /** Messages the Visualization class will send to the webview */
 export type RepovisMessage = SetMessage;
@@ -57,7 +53,6 @@ export type RepovisWebviewMessage =
 	| ReadyMessage
 	| OpenMessage
 	| RevealInExplorerMessage
-	| ContextMenuActionMessage
 	| UpdateSettings;
 
 export type SetMessage = {
@@ -69,11 +64,6 @@ export type SetMessage = {
 export type ReadyMessage = { type: "ready" };
 export type OpenMessage = { type: "open"; file: string };
 export type RevealInExplorerMessage = { type: "reveal"; file: string };
-export type ContextMenuActionMessage = {
-	type: "context-menu";
-	action: string;
-	file: string;
-};
 export type UpdateSettings = {
 	type: "update-settings";
 	settings: Partial<WebviewVisualizationSettings>;

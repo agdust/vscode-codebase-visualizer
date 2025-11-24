@@ -4,6 +4,7 @@ export const presetColors: Record<string, string> = {
 	jsx: "#f1e05a",
 	tsx: "#3178c6",
 	py: "#3572A5",
+	ipynb: "#3572A5",
 	java: "#b07219",
 	c: "#555555",
 	cpp: "#f34b7d",
@@ -30,3 +31,5 @@ export const presetColors: Record<string, string> = {
 	txt: "#aeb1b5",
 	gitignore: "#f44d27",
 };
+
+export const unknownColor = "#aeb1b5";

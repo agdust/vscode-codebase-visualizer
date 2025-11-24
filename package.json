@@ -80,8 +80,6 @@
 	},
 	"dependencies": {
 		"@vscode/debugprotocol": "^1.68.0",
-		"d3": "^7.9.0",
-		"d3-context-menu": "^2.1.0",
-		"tippy.js": "^6.3.7"
+		"d3": "^7.9.0"
 	}
 }

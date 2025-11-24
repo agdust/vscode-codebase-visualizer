@@ -74,18 +74,18 @@ export class Visualization {
 
 		this.webviewPanel.webview.onDidReceiveMessage(
 			async (message: RepovisWebviewMessage) => {
-				if (message.type == "ready") {
+				if (message.type === "ready") {
 					// we can get ready again if the webview closes and reopens.
 					await this.sendSet({ codebase: true, settings: true });
-				} else if (message.type == "open") {
+				} else if (message.type === "open") {
 					// NOTE: we could do these and Command URIs inside the webview instead. That might be simpler
 					await vscode.commands.executeCommand("vscode.open", this.getUri(message.file));
-				} else if (message.type == "reveal") {
+				} else if (message.type === "reveal") {
 					await vscode.commands.executeCommand(
 						"revealInExplorer",
 						this.getUri(message.file),
 					);
-				} else if (message.type == "update-settings") {
+				} else if (message.type === "update-settings") {
 					if (message.settings.include !== undefined) {
 						this.settings.include = message.settings.include;
 					}
@@ -94,8 +94,8 @@ export class Visualization {
 					}
 
 					if (
-						message.settings.include != undefined ||
-						message.settings.exclude != undefined
+						message.settings.include !== undefined ||
+						message.settings.exclude !== undefined
 					) {
 						await this.updateFileList();
 						await this.sendSet({ codebase: true });
@@ -242,7 +242,7 @@ export class Visualization {
 
 		const inFiles = (uri: Uri) => {
 			return this.files.some((u) => {
-				return u.fsPath == uri.fsPath;
+				return u.fsPath === uri.fsPath;
 			});
 		};
 
@@ -291,8 +291,11 @@ export class Visualization {
 		const scriptUri = webview.asWebviewUri(
 			Uri.joinPath(extPath, "dist", "webview", "webview.js"),
 		);
+		const styleUri = webview.asWebviewUri(
+			Uri.joinPath(extPath, "dist", "webview", "webview.css"),
+		);
 
-		return getWebviewHtml(scriptUri.toString());
+		return getWebviewHtml(scriptUri.toString(), styleUri.toString());
 	}
 
 	private async sendSet(send: { codebase?: boolean; settings?: boolean }) {

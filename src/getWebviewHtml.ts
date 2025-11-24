@@ -1,10 +1,11 @@
-export const getWebviewHtml = (scriptUri: string): string => {
+export const getWebviewHtml = (scriptUri: string, styleUri: string): string => {
 	return `<!doctype html>
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>CodeBase Relationship Visualizer</title>
+		<link rel="stylesheet" href="${styleUri}">
 	</head>
 	<body>
 		<div id="app">
@@ -39,11 +40,13 @@ export const getWebviewHtml = (scriptUri: string): string => {
 						/>
 					</div>
 				</div>
-				<div class="sidebar-header" id="file-tree-header" style="cursor: pointer">
-					<span class="sidebar-title">File Tree</span>
-					<span id="file-tree-toggle-icon">▼</span>
-				</div>
-				<div id="file-tree" class="file-tree"></div>
+				<details id="file-tree-details">
+					<summary class="sidebar-header" id="file-tree-header" style="cursor: pointer">
+						<span class="sidebar-title">File Tree</span>
+						<span class="tree-toggle"></span>
+					</summary>
+					<div id="file-tree" class="file-tree"></div>
+				</details>
 			</div>
 			<div id="content">
 				<button id="open-sidebar" class="icon-button" title="Open Settings">

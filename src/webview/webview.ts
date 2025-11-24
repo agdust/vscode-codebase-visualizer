@@ -25,8 +25,6 @@ function main() {
 	const includeInput = getElement<HTMLInputElement>("include");
 	const excludeInput = getElement<HTMLInputElement>("exclude");
 	const fileTreeContainer = getElement<HTMLDivElement>("file-tree");
-	const fileTreeHeader = getElement("file-tree-header");
-	const fileTreeToggleIcon = getElement("file-tree-toggle-icon");
 
 	// State for file tree checkboxes
 	const excludedPaths = new Set<string>();
@@ -54,7 +52,7 @@ function main() {
 	addEventListener("message", (event: MessageEvent) => {
 		const message: RepovisMessage = event.data;
 
-		if (message.type == "set") {
+		if (message.type === "set") {
 			if (message.settings) {
 				includeInput.value = message.settings.include;
 				excludeInput.value = message.settings.exclude;
@@ -87,25 +85,10 @@ function main() {
 
 	const toggleSidebar = () => {
 		sidebar.classList.toggle("collapsed");
-		// Trigger resize after transition so diagram updates
-		setTimeout(() => {
-			document.body.dispatchEvent(new Event("resize"));
-		}, 250); // Match CSS transition time
 	};
 
 	openSidebarBtn.addEventListener("click", toggleSidebar);
 	closeSidebarBtn.addEventListener("click", toggleSidebar);
-
-	// File Tree Toggle
-	fileTreeHeader.addEventListener("click", () => {
-		if (fileTreeContainer.style.display === "none") {
-			fileTreeContainer.style.display = "block";
-			fileTreeToggleIcon.textContent = "▼";
-		} else {
-			fileTreeContainer.style.display = "none";
-			fileTreeToggleIcon.textContent = "▶";
-		}
-	});
 
 	includeInput.addEventListener("change", updateFilters);
 	excludeInput.addEventListener("change", updateFilters);

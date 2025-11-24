@@ -19,26 +19,19 @@ export class FileTree {
 		const currentPath = path ? `${path}/${node.name}` : node.name;
 		const isDir = node.type === FileType.Directory;
 
-		const nodeEl = document.createElement("div");
+		const nodeEl = isDir
+			? document.createElement("details")
+			: document.createElement("div");
 		nodeEl.className = "tree-node";
-		if (isDir) {
-			nodeEl.classList.add("expanded");
-		}
 
-		const itemEl = document.createElement("div");
+		const itemEl = isDir
+			? document.createElement("summary")
+			: document.createElement("div");
 		itemEl.className = "tree-item";
 
 		// Toggle for directories
 		const toggleEl = document.createElement("span");
 		toggleEl.className = "tree-toggle";
-		toggleEl.textContent = isDir ? "▼" : "";
-		if (isDir) {
-			toggleEl.onclick = (e: MouseEvent) => {
-				e.stopPropagation();
-				nodeEl.classList.toggle("expanded");
-				toggleEl.textContent = nodeEl.classList.contains("expanded") ? "▼" : "▶";
-			};
-		}
 		itemEl.appendChild(toggleEl);
 
 		// Checkbox

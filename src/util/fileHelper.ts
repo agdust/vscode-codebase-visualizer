@@ -4,6 +4,7 @@ import * as path from "path";
 import { promises as fsp } from "fs";
 
 import { AnyFile, Directory, FileType } from "../types";
+import { sortFiles, sortFileTree } from "./sortFiles";
 
 /** Creates a AnyFile object of type. */
 async function createAnyFile(
@@ -13,20 +14,20 @@ async function createAnyFile(
 	stat?: vscode.FileStat,
 ): Promise<AnyFile> {
 	const name = path.basename(uri.fsPath);
-	if (type == FileType.Directory) {
+	if (type === FileType.Directory) {
 		return { type, name, children: [] };
-	} else if (type == FileType.File) {
+	} else if (type === FileType.File) {
 		stat = stat ?? (await vscode.workspace.fs.stat(uri));
 		return { type, name, size: Math.max(stat.size, 1) };
 		// FileType enum is bit-flagged together for Symlink files/directories
 	} else if ((type & FileType.SymbolicLink) === FileType.SymbolicLink) {
 		const realpath = await fsp.realpath(uri.fsPath);
 		let resolved = path.relative(base.fsPath, realpath).split(path.sep).join("/"); // always use / style paths for internal links
-		if (resolved.split("/")[0] == "..") {
+		if (resolved.split("/")[0] === "..") {
 			resolved = realpath; // resolved is relative to base unless link is outside, then its absolute
 		}
 		const linkedType = type & ~FileType.SymbolicLink; // remove flag to make a single value
-		if (linkedType != FileType.Directory && linkedType != FileType.File) {
+		if (linkedType !== FileType.Directory && linkedType !== FileType.File) {
 			throw new Error("Other filetypes not supported");
 		}
 
@@ -57,12 +58,18 @@ export async function getFileTree(
 	if (type === FileType.Directory) {
 		const files = await vscode.workspace.fs.readDirectory(uri);
 		const childrenResults = await Promise.allSettled(
-			files.map(([name, type]) => getFileTree(Uri.joinPath(uri, name), base, type)),
+			files.map(([name, type]) => {
+				return getFileTree(Uri.joinPath(uri, name), base, type);
+			}),
 		);
 		const children = childrenResults
-			.filter((result) => result.status == "fulfilled")
-			.map((result) => (result as PromiseFulfilledResult<AnyFile>).value)
-			.toSorted((a, b) => a.name.localeCompare(b.name));
+			.filter((result) => {
+				return result.status == "fulfilled";
+			})
+			.map((result) => {
+				return (result as PromiseFulfilledResult<AnyFile>).value;
+			})
+			.toSorted(sortFiles);
 
 		const folder = (await createAnyFile(type, uri, base)) as Directory;
 		return {
@@ -91,7 +98,9 @@ export function parseGlobs(
 	const parseGlob = (glob: string) => {
 		glob = `{${glob
 			.split(",")
-			.map((g) => g.trim())
+			.map((g) => {
+				return g.trim();
+			})
 			.join(",")}}`;
 		return new RelativePattern(base, glob);
 	};
@@ -110,7 +119,9 @@ export async function getFilteredFileList(
 	const [includePattern, excludePattern] = parseGlobs(base, include, exclude);
 	const fileList = await vscode.workspace.findFiles(includePattern, excludePattern);
 	// note: broken symlinks don't get returned by findFiles
-	fileList.sort((a, b) => a.fsPath.localeCompare(b.fsPath));
+	fileList.sort((a, b) => {
+		return a.fsPath.localeCompare(b.fsPath);
+	});
 	return fileList;
 }
 
@@ -132,13 +143,19 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 	const paths = uris
 		.flatMap((uri) => {
 			const parts = path.relative(base.fsPath, uri.fsPath).split(path.sep);
-			if (parts[0] == ".." || parts[0] == "") {
+			if (parts[0] === ".." || parts[0] === "") {
 				throw new Error(`"${uri.fsPath}" is not under "${base.fsPath}"`);
 			}
-			return parts.map((_s, i, arr) => Uri.joinPath(base, ...arr.slice(0, i + 1)));
+			return parts.map((_s, i, arr) => {
+				return Uri.joinPath(base, ...arr.slice(0, i + 1));
+			});
 		})
-		.toSorted((a, b) => a.fsPath.localeCompare(b.fsPath)) // Sorting by string path will make sure that directories occur before their children.
-		.filter((p, i, arr) => i === 0 || p.fsPath !== (arr[i - 1] as Uri).fsPath); // uniq optimized for sorted
+		.toSorted((a, b) => {
+			return a.fsPath.localeCompare(b.fsPath);
+		}) // Sorting by string path will make sure that directories occur before their children.
+		.filter((p, i, arr) => {
+			return i === 0 || p.fsPath !== (arr[i - 1] as Uri).fsPath;
+		}); // uniq optimized for sorted
 
 	// query all the stat data asynchronously
 	const results = await Promise.allSettled(
@@ -148,8 +165,12 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 		}),
 	);
 	const flat = results
-		.filter((rslt) => rslt.status == "fulfilled")
-		.map((rslt) => (rslt as PromiseFulfilledResult<[string, AnyFile]>).value);
+		.filter((rslt) => {
+			return rslt.status === "fulfilled";
+		})
+		.map((rslt) => {
+			return (rslt as PromiseFulfilledResult<[string, AnyFile]>).value;
+		});
 
 	const tree: Directory = (await createAnyFile(
 		FileType.Directory,
@@ -164,11 +185,13 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 		let include = true;
 
 		for (const part of parts.slice(0, -1)) {
-			const found = dir.children.find((f) => f.name == part);
+			const found = dir.children.find((f) => {
+				return f.name === part;
+			});
 			if (found?.type === FileType.SymbolicLink) {
 				include = false;
 				break; // skip files under a symbolic link directory so they aren't included twice.
-			} else if (found?.type != FileType.Directory) {
+			} else if (found?.type !== FileType.Directory) {
 				// this shouldn't be possible except with maybe a race condition deleting/modifying a folder?
 				throw new Error(`Error building tree on file ${fsPath}`);
 			}
@@ -180,5 +203,6 @@ export async function listToFileTree(base: Uri, uris: Uri[]): Promise<Directory>
 		}
 	}
 
+	sortFileTree(tree);
 	return tree;
 }

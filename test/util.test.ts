@@ -5,6 +5,7 @@ import { AnyFile, FileType } from "../src/types";
 import { getExtension } from "../src/util/getExtension";
 import { filterFileTree } from "../src/util/filterFileTree";
 import { normalizedJsonStringify } from "../src/util/normalizedJsonStringify";
+import { sortFiles } from "../src/util/sortFiles";
 
 describe("Test utils.ts", () => {
 	it("test getExtension", () => {
@@ -42,32 +43,58 @@ describe("Test utils.ts", () => {
 		const file: AnyFile = { name: "empty", type: FileType.File, size: 4 };
 
 		it("basic", () => {
-			expect(filterFileTree(tree, () => true)).to.deep.equal(tree);
-			expect(filterFileTree(tree, (f) => ["a", "b", "c"].includes(f.name))).to.deep.equal(
-				{
-					name: "a",
-					type: FileType.Directory,
-					children: [
-						{
-							name: "b",
-							type: FileType.Directory,
-							children: [{ name: "c", type: FileType.File, size: 1 }],
-						},
-					],
-				},
-			);
+			expect(
+				filterFileTree(tree, () => {
+					return true;
+				}),
+			).to.deep.equal(tree);
+			expect(
+				filterFileTree(tree, (f) => {
+					return ["a", "b", "c"].includes(f.name);
+				}),
+			).to.deep.equal({
+				name: "a",
+				type: FileType.Directory,
+				children: [
+					{
+						name: "b",
+						type: FileType.Directory,
+						children: [{ name: "c", type: FileType.File, size: 1 }],
+					},
+				],
+			});
 		});
 
 		it("can't remove root node", () => {
-			expect(filterFileTree(tree, () => false)).to.deep.equal({
+			expect(
+				filterFileTree(tree, () => {
+					return false;
+				}),
+			).to.deep.equal({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
 			});
-			expect(filterFileTree(empty, () => true)).to.deep.equal(empty);
-			expect(filterFileTree(empty, () => false)).to.deep.equal(empty);
-			expect(filterFileTree(file, () => true)).to.deep.equal(file);
-			expect(filterFileTree(file, () => false)).to.deep.equal(file);
+			expect(
+				filterFileTree(empty, () => {
+					return true;
+				}),
+			).to.deep.equal(empty);
+			expect(
+				filterFileTree(empty, () => {
+					return false;
+				}),
+			).to.deep.equal(empty);
+			expect(
+				filterFileTree(file, () => {
+					return true;
+				}),
+			).to.deep.equal(file);
+			expect(
+				filterFileTree(file, () => {
+					return false;
+				}),
+			).to.deep.equal(file);
 		});
 
 		it("paths", () => {
@@ -76,11 +103,17 @@ describe("Test utils.ts", () => {
 				paths.push(path);
 				return true;
 			});
-			paths.sort((a, b) => a.localeCompare(b));
+			paths.sort((a, b) => {
+				return a.localeCompare(b);
+			});
 
 			expect(paths).to.deep.equal(["b", "b/c", "b/d", "e", "f"]);
 
-			expect(filterFileTree(tree, () => false)).to.deep.equal({
+			expect(
+				filterFileTree(tree, () => {
+					return false;
+				}),
+			).to.deep.equal({
 				name: "a",
 				type: FileType.Directory,
 				children: [],
@@ -112,10 +145,9 @@ describe("Test utils.ts", () => {
 			};
 
 			expect(
-				filterFileTree(
-					tree,
-					(f) => f.type != FileType.Directory || f.children.length > 0,
-				),
+				filterFileTree(tree, (f) => {
+					return f.type !== FileType.Directory || f.children.length > 0;
+				}),
 			).to.deep.equal({
 				name: "A",
 				type: FileType.Directory,
@@ -128,6 +160,47 @@ describe("Test utils.ts", () => {
 					// both C and D should be filtered because D is empty
 				],
 			});
+		});
+	});
+
+	describe("test sortFiles", () => {
+		const dirA: AnyFile = { name: "a", type: FileType.Directory, children: [] };
+		const dirB: AnyFile = { name: "b", type: FileType.Directory, children: [] };
+		const fileA: AnyFile = { name: "a.txt", type: FileType.File, size: 1 };
+		const fileB: AnyFile = { name: "b.txt", type: FileType.File, size: 1 };
+		const symlinkDir: AnyFile = {
+			name: "linkDir",
+			type: FileType.SymbolicLink,
+			linkedType: FileType.Directory,
+			link: "",
+			resolved: "",
+		};
+		const symlinkFile: AnyFile = {
+			name: "linkFile",
+			type: FileType.SymbolicLink,
+			linkedType: FileType.File,
+			link: "",
+			resolved: "",
+		};
+
+		it("sorts directories before files", () => {
+			expect(sortFiles(dirA, fileA)).to.equal(-1);
+			expect(sortFiles(fileA, dirA)).to.equal(1);
+		});
+
+		it("sorts alphabetically within same type", () => {
+			expect(sortFiles(dirA, dirB)).to.be.lessThan(0);
+			expect(sortFiles(fileA, fileB)).to.be.lessThan(0);
+		});
+
+		it("treats symlink to directory as directory", () => {
+			expect(sortFiles(symlinkDir, fileA)).to.equal(-1);
+			expect(sortFiles(symlinkDir, dirA)).to.be.greaterThan(0); // "linkDir" > "a"
+		});
+
+		it("treats symlink to file as file", () => {
+			expect(sortFiles(symlinkFile, dirA)).to.equal(1);
+			expect(sortFiles(symlinkFile, fileA)).to.be.greaterThan(0); // "linkFile" > "a.txt"
 		});
 	});
 
